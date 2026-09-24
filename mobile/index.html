@@ -74,6 +74,7 @@
   .rule-court { width: 100%; height: 180px; display: block; }
   .rule-court-cap { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 6px 0 0; text-align: center; }
   .cal-head { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 8px; }
+  .cal-nav { border-color: var(--navy); color: var(--navy); }
   .cal-head span { font-size: 15px; font-weight: 700; color: var(--navy); }
   .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 10px; }
   .cal-dow { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; }
@@ -150,9 +151,9 @@
     <h2>경기 일정</h2>
     <p class="sched-note" id="schedNote"></p>
     <div class="cal-head">
-      <button id="calPrev" class="mini" type="button">‹ 이전달</button>
+      <button id="calPrev" class="mini cal-nav" type="button">‹ 이전달</button>
       <span id="calMonthLabel"></span>
-      <button id="calNext" class="mini" type="button">다음달 ›</button>
+      <button id="calNext" class="mini cal-nav" type="button">다음달 ›</button>
     </div>
     <div class="cal-grid" id="calGrid"></div>
     <div id="calDayList"></div>
@@ -287,7 +288,7 @@ const SOURCES = {
 // 각 노드: shot(누가 어디서 어디로), pos(샷 뒤 네 명 위치), formation, arrow(로테이션 신호), notes(설명+출처)
 // ============================================================================
 const DATA = {
-  version: "v2.29",
+  version: "v2.30",
   topics: [
     {
       id: "serve-side", sport: "level",
@@ -3571,7 +3572,7 @@ DATA.topics.push(buildSinglesSmashDefence());
   // ----- 게임 규칙 콘텐츠(v2.26): BWF 공식 규칙(bwf_laws) 핵심만 쉬운 말로. 세부 수치(서비스 높이 등)는 안 다룸 — 큰 틀만.
   const RULES = {
     common: [
-      ["점수", "한 세트 21점, 3세트 중 2세트 먼저 이기면 승리. 서브·리시브 상관없이 랠리에서 이긴 쪽이 무조건 1점(랠리포인트제)."],
+      ["점수", "한 세트 21점, 3세트 중 2세트 먼저 이기면 승리(국제 공식 경기 기준). 국내 동호인 대회는 시간을 줄이려고 25점 단판(1세트, Maximum 25점)으로 치르는 경우가 많다 — 세부 규정은 대회 요강마다 다를 수 있어 정확한 방식은 그 대회 요강을 따라야 한다. 서브·리시브 상관없이 랠리에서 이긴 쪽이 무조건 1점(랠리포인트제)인 건 두 방식 다 같다."],
       ["듀스", "20:20이면 2점 차가 날 때까지 계속. 29:29가 되면 30점을 먼저 내는 쪽이 그 세트를 이긴다."],
       ["서브", "서브는 항상 대각선 반대 코트로 넣는다."],
       ["서브 코트", "내 점수가 짝수면 오른쪽 코트에서, 홀수면 왼쪽 코트에서 서브."],
