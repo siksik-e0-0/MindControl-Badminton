@@ -2,7 +2,7 @@
 // v1.8.1: 리뷰어 지적(상대 응수 '리프트 크로스'가 같은 쪽 직선) — 이전 검사는 내 샷만 봤다.
 import fs from "node:fs";
 import vm from "node:vm";
-const file = new URL("../../mobile/index.html", import.meta.url).pathname;
+const file = new URL("../mobile/index.html", import.meta.url).pathname;
 const html = fs.readFileSync(file, "utf8");
 const ctx = {}; vm.createContext(ctx);
 vm.runInContext(html.slice(html.indexOf("const SOURCES"), html.indexOf("// 뷰어")) + "\nthis.DATA = DATA;", ctx);
