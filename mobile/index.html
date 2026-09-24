@@ -69,7 +69,18 @@
   .start-btn { width: 100%; min-height: 52px; border-radius: 12px; background: var(--orange); color: #fff; font-size: 17px; font-weight: 700; border: 0; }
   .start-btn:disabled { opacity: .35; }
   .menu-btns { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
-  .sheet-card { max-height: 78vh; overflow-y: auto; }
+  .sheet-card { height: 78vh; overflow-y: auto; }
+  .rule-court-wrap { margin-bottom: 10px; }
+  .rule-court { width: 100%; height: 180px; display: block; }
+  .rule-court-cap { font-size: 12px; color: var(--muted); line-height: 1.4; margin: 6px 0 0; text-align: center; }
+  .cal-head { display: flex; align-items: center; justify-content: space-between; margin: 4px 0 8px; }
+  .cal-head span { font-size: 15px; font-weight: 700; color: var(--navy); }
+  .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; margin-bottom: 10px; }
+  .cal-dow { text-align: center; font-size: 11px; color: var(--muted); padding: 4px 0; }
+  .cal-day { aspect-ratio: 1; display: flex; align-items: center; justify-content: center; font-size: 13px; color: var(--ink); border-radius: 8px; background: rgba(0,0,0,.04); }
+  .cal-day.empty { background: transparent; }
+  .cal-day.has-event { background: var(--navy); color: #fff; font-weight: 700; }
+  .cal-day.selected { outline: 2px solid var(--orange); outline-offset: 1px; }
   .sheet-back { width: 100%; min-height: 44px; border-radius: 10px; background: transparent; border: 1.5px solid var(--navy); color: var(--navy); font-size: 14px; font-weight: 700; margin-top: 14px; }
   .rule-tabs { display: flex; gap: 8px; margin: 4px 0 14px; }
   .rule-tab { flex: 1; min-height: 40px; border: 1.5px solid #bbb; background: #fff; border-radius: 10px; font-size: 14px; color: var(--ink); }
@@ -121,11 +132,14 @@
 <section id="rules" class="start hidden">
   <div class="start-card sheet-card">
     <h2>게임 규칙</h2>
-    <p class="start-sub">아주 쉽게 보는 핵심만 — 자세한 규정은 BWF 공식 규칙 참고</p>
     <div class="rule-tabs">
       <button class="rule-tab on" type="button" data-mode="common">공통</button>
       <button class="rule-tab" type="button" data-mode="singles">단식</button>
       <button class="rule-tab" type="button" data-mode="doubles">복식</button>
+    </div>
+    <div id="ruleCourtWrap" class="rule-court-wrap hidden">
+      <svg id="ruleCourt" class="rule-court" viewBox="-3.9 -7.55 7.8 15.1" aria-label="코트 규격"></svg>
+      <p class="rule-court-cap" id="ruleCourtCap"></p>
     </div>
     <div id="ruleBody"></div>
     <button id="btnRulesBack" class="sheet-back" type="button">메뉴로</button>
@@ -135,7 +149,13 @@
   <div class="start-card sheet-card">
     <h2>경기 일정</h2>
     <p class="sched-note" id="schedNote"></p>
-    <div id="schedBody"></div>
+    <div class="cal-head">
+      <button id="calPrev" class="mini" type="button">‹ 이전달</button>
+      <span id="calMonthLabel"></span>
+      <button id="calNext" class="mini" type="button">다음달 ›</button>
+    </div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div id="calDayList"></div>
     <button id="btnScheduleBack" class="sheet-back" type="button">메뉴로</button>
   </div>
 </section>
@@ -267,7 +287,7 @@ const SOURCES = {
 // 각 노드: shot(누가 어디서 어디로), pos(샷 뒤 네 명 위치), formation, arrow(로테이션 신호), notes(설명+출처)
 // ============================================================================
 const DATA = {
-  version: "v2.28",
+  version: "v2.29",
   topics: [
     {
       id: "serve-side", sport: "level",
@@ -3551,25 +3571,55 @@ DATA.topics.push(buildSinglesSmashDefence());
   // ----- 게임 규칙 콘텐츠(v2.26): BWF 공식 규칙(bwf_laws) 핵심만 쉬운 말로. 세부 수치(서비스 높이 등)는 안 다룸 — 큰 틀만.
   const RULES = {
     common: [
-      ["점수", "한 세트 21점, 3세트 중 2세트 먼저 이기면 승리. 20:20이면 2점 차가 날 때까지, 29:29면 30점을 먼저 내면 승리. 서브·리시브 상관없이 랠리에서 이긴 쪽이 무조건 1점(랠리포인트제)."],
-      ["서브", "셔틀 전체가 맞는 순간 코트 바닥에서 1.15m 아래에 있어야 한다(신장과 무관한 고정 높이). 서브는 항상 대각선 반대 코트로 넣는다."],
+      ["점수", "한 세트 21점, 3세트 중 2세트 먼저 이기면 승리. 서브·리시브 상관없이 랠리에서 이긴 쪽이 무조건 1점(랠리포인트제)."],
+      ["듀스", "20:20이면 2점 차가 날 때까지 계속. 29:29가 되면 30점을 먼저 내는 쪽이 그 세트를 이긴다."],
+      ["서브", "서브는 항상 대각선 반대 코트로 넣는다."],
       ["서브 코트", "내 점수가 짝수면 오른쪽 코트에서, 홀수면 왼쪽 코트에서 서브."],
       ["반칙(폴트)", "셔틀이 라인 밖으로 나가거나, 선수의 라켓·몸·옷이 네트에 닿거나, 셔틀을 두 번 연속 치면 반칙(셔틀 자체가 네트를 스치고 넘어가는 건 정상 타구)."]
     ],
-    singles: [
-      ["코트 폭", "안쪽 사이드라인까지만 쓴다 — 복식보다 좁다."],
-      ["코트 길이", "서브는 짧은서비스라인을 넘겨야 유효(네트 바로 앞은 서브 무효). 뒤쪽 경계는 끝선까지로 복식보다 깊다. 랠리 중에는 앞뒤 끝선까지 전부 유효."],
-      ["체력 부담", "혼자 코트 전체를 커버해야 해서 이동량이 많다."]
-    ],
+    singles: [],
     doubles: [
-      ["코트 폭", "바깥쪽 사이드라인까지 쓴다 — 단식보다 넓다."],
-      ["서브 길이", "짧은서비스라인부터 뒤 서비스라인(끝선보다 앞)까지만 유효 — 그보다 길면 아웃."],
       ["파트너 로테이션", "왼쪽·오른쪽 서비스 코트 배정은 팀당 두 선수에게 고정돼 있다가, 우리 팀이 서브로 득점했을 때만 서로 바뀐다(서버가 다음엔 반대쪽에서 서브). 서브권을 놓치면 두 사람의 배정은 그대로. 서브하는 동안 파트너는 자기 코트 안 어디든 설 수 있다(상대 시야만 안 가리면)."],
       ["리시브 위치", "서브 받는 사람은 정해진 대각선 코트 안에 서야 한다. 파트너는 코트 안이면 자유 위치."]
     ]
   };
+  function drawRuleCourt(mode) {
+    const svg = $("#ruleCourt");
+    svg.innerHTML = "";
+    const g = el("g", {}, svg);
+    el("rect", { x: -C.halfW - 0.3, y: -C.halfL - 0.3, width: 2 * C.halfW + 0.6, height: 2 * C.halfL + 0.6, fill: "#357a4c" }, g);
+    el("rect", { x: -C.halfW, y: -C.halfL, width: 2 * C.halfW, height: 2 * C.halfL, fill: "#3f8f5a", stroke: "#fff", "stroke-width": "0.06" }, g);
+    const zone = (x, y, w, h) => el("rect", { x, y, width: w, height: h, fill: "#e2384d", "fill-opacity": "0.62" }, g);
+    if (mode === "singles") {
+      const a = C.halfW - C.singles;
+      zone(-C.halfW, -C.halfL, a, 2 * C.halfL);
+      zone(C.singles, -C.halfL, a, 2 * C.halfL);
+    } else if (mode === "doubles") {
+      zone(-C.halfW, -C.halfL, 2 * C.halfW, C.halfL - C.longLine);
+      zone(-C.halfW, C.longLine, 2 * C.halfW, C.halfL - C.longLine);
+    }
+    const rl = (x1, y1, x2, y2, w, c) => el("line", { x1, y1, x2, y2, stroke: c || "#fff", "stroke-width": w || 0.05 }, g);
+    const hi = "#ffd23f";
+    rl(-C.singles, -C.halfL, -C.singles, C.halfL, mode === "singles" ? 0.08 : 0.045, mode === "singles" ? hi : "#fff");
+    rl(C.singles, -C.halfL, C.singles, C.halfL, mode === "singles" ? 0.08 : 0.045, mode === "singles" ? hi : "#fff");
+    rl(-C.halfW, -C.shortLine, C.halfW, -C.shortLine);
+    rl(-C.halfW, C.shortLine, C.halfW, C.shortLine);
+    rl(-C.halfW, -C.longLine, C.halfW, -C.longLine, mode === "doubles" ? 0.08 : 0.045, mode === "doubles" ? hi : "#fff");
+    rl(-C.halfW, C.longLine, C.halfW, C.longLine, mode === "doubles" ? 0.08 : 0.045, mode === "doubles" ? hi : "#fff");
+    rl(0, -C.halfL, 0, -C.shortLine);
+    rl(0, C.shortLine, 0, C.halfL);
+    rl(-C.halfW - 0.3, 0, C.halfW + 0.3, 0, 0.1);
+    if (mode === "singles") {
+      $("#ruleCourtCap").textContent = "노란 선(안쪽 사이드라인) 밖 빨간 구역은 단식에서 아웃. 뒤는 끝선까지 전부 인(서브도 랠리도).";
+    } else if (mode === "doubles") {
+      $("#ruleCourtCap").textContent = "바깥쪽 사이드라인까지 전부 인(단식보다 넓다). 노란 선(롱서비스라인) 뒤 빨간 구역은 서브할 때만 아웃 — 랠리 중엔 끝선까지 인.";
+    }
+  }
   function renderRules(mode) {
     document.querySelectorAll(".rule-tab").forEach((b) => b.classList.toggle("on", b.dataset.mode === mode));
+    const courtWrap = $("#ruleCourtWrap");
+    if (mode === "singles" || mode === "doubles") { courtWrap.classList.remove("hidden"); drawRuleCourt(mode); }
+    else courtWrap.classList.add("hidden");
     const body = $("#ruleBody");
     body.innerHTML = "";
     RULES[mode].forEach(([title, text]) => {
@@ -3617,27 +3667,63 @@ DATA.topics.push(buildSinglesSmashDefence());
     { d: "11.14~11.15", n: "2026년 제35회 용산구청장기 배드민턴대회", p: "서울 용산구", u: "https://badmintok.com/badminton-tournament/2026-용산구청장기-배드민턴대회/" },
     { d: "11.15", n: "2026년 마제라 전국 배드민턴대회", p: "서울 마곡 실내 배드민턴장", u: "https://badmintok.com/badminton-tournament/2026-마제라-배드민턴대회/" }
   ];
-  function renderSchedule() {
-    $("#schedNote").textContent = "서울·경기 지역 대회만 — 출처: 배드민톡(badmintok.com), 확인일 2026-09-25. 대한배드민턴협회 공식 대회는 사이트 접속이 안 돼 확인 못 했고, 코리아오픈 등 국제투어·전국체전은 전부 지방 개최라 이 목록엔 없음. 날짜·장소는 주최 측 사정으로 바뀔 수 있어 최신 정보는 링크에서 다시 확인.";
-    const body = $("#schedBody");
-    body.innerHTML = "";
-    let curMonth = "";
-    SCHEDULE.forEach((it) => {
-      const month = it.d.split(".")[0] + "월";
-      if (month !== curMonth) {
-        curMonth = month;
-        const h = document.createElement("div"); h.className = "sched-month"; h.textContent = month;
-        body.appendChild(h);
-      }
+  function parseSchedRange(d) {
+    const [a, b] = d.split("~");
+    const [am, ad] = a.split(".").map(Number);
+    const start = new Date(2026, am - 1, ad);
+    const end = b ? (() => { const [bm, bd] = b.split(".").map(Number); return new Date(2026, bm - 1, bd); })() : start;
+    return { start, end };
+  }
+  function schedEventsOn(y, m, d) {
+    const t = new Date(y, m, d).getTime();
+    return SCHEDULE.filter((it) => { const r = parseSchedRange(it.d); return t >= r.start.getTime() && t <= r.end.getTime(); });
+  }
+  let calY = 2026, calM = 9; // 2026년 10월(0-indexed 9) — SCHEDULE 첫 대회가 있는 달부터 시작
+  function renderCalDayList(evs) {
+    const list = $("#calDayList");
+    list.innerHTML = "";
+    evs.forEach((it) => {
       const row = document.createElement("div"); row.className = "sched-item";
       const d = document.createElement("div"); d.className = "d"; d.textContent = it.d;
       const n = document.createElement("div"); n.className = "n"; n.textContent = it.n;
       const p = document.createElement("div"); p.className = "p"; p.textContent = it.p;
       const a = document.createElement("a"); a.href = it.u; a.target = "_blank"; a.rel = "noopener"; a.textContent = "대회 정보 보기 →";
       row.appendChild(d); row.appendChild(n); row.appendChild(p); row.appendChild(a);
-      body.appendChild(row);
+      list.appendChild(row);
     });
   }
+  function renderCalGrid() {
+    $("#calMonthLabel").textContent = calY + "년 " + (calM + 1) + "월";
+    const grid = $("#calGrid");
+    grid.innerHTML = "";
+    ["일", "월", "화", "수", "목", "금", "토"].forEach((w) => {
+      const e = document.createElement("div"); e.className = "cal-dow"; e.textContent = w; grid.appendChild(e);
+    });
+    const firstDow = new Date(calY, calM, 1).getDay();
+    const daysInMonth = new Date(calY, calM + 1, 0).getDate();
+    for (let i = 0; i < firstDow; i++) { const e = document.createElement("div"); e.className = "cal-day empty"; grid.appendChild(e); }
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cell = document.createElement("div"); cell.className = "cal-day"; cell.textContent = String(d);
+      const evs = schedEventsOn(calY, calM, d);
+      if (evs.length) {
+        cell.classList.add("has-event");
+        cell.addEventListener("click", () => {
+          document.querySelectorAll(".cal-day").forEach((c) => c.classList.remove("selected"));
+          cell.classList.add("selected");
+          renderCalDayList(evs);
+        });
+      }
+      grid.appendChild(cell);
+    }
+    $("#calDayList").innerHTML = "";
+  }
+  function renderSchedule() {
+    $("#schedNote").textContent = "서울·경기 지역 대회만 — 출처: 배드민톡(badmintok.com), 확인일 2026-09-25. 대한배드민턴협회 공식 대회는 사이트 접속이 안 돼 확인 못 했고, 코리아오픈 등 국제투어·전국체전은 전부 지방 개최라 이 목록엔 없음. 날짜·장소는 주최 측 사정으로 바뀔 수 있어 최신 정보는 링크에서 다시 확인. 날짜를 눌러 보세요.";
+    calY = 2026; calM = 9;
+    renderCalGrid();
+  }
+  $("#calPrev").addEventListener("click", () => { calM--; if (calM < 0) { calM = 11; calY--; } renderCalGrid(); });
+  $("#calNext").addEventListener("click", () => { calM++; if (calM > 11) { calM = 0; calY++; } renderCalGrid(); });
 
   // ----- 시작 화면(종목·급수) → 탭 구성
   function renderStart() {
