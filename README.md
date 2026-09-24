@@ -3,8 +3,12 @@
 상황 데이터 기반 배드민턴 전술 학습 시뮬레이터. 랠리 중 마주치는 매 순간을 코트 다이어그램과 함께 보여주고, "상대가 다음에 무엇을 칠지, 나는 무엇을 준비해야 하는지"를 실제 코칭 자료에 근거한 추정 확률로 반복 학습한다.
 
 <p align="center">
-  <img src="docs/screenshot-start.png" width="46%" alt="시작 화면" />
+  <img src="docs/screenshot-start.png" width="46%" alt="메인 메뉴" />
   <img src="docs/screenshot-scene.png" width="46%" alt="상황 분기 화면" />
+</p>
+<p align="center">
+  <img src="docs/screenshot-rules.png" width="46%" alt="게임 규칙 화면" />
+  <img src="docs/screenshot-schedule.png" width="46%" alt="경기 일정 캘린더" />
 </p>
 
 ## 특징
@@ -13,6 +17,8 @@
 - **출처 있는 추정** — 표시되는 확률은 전부 "추정치"이며 배드민턴 코칭 자료 출처를 근거로 둔다. 승률 통계가 아니라 학습 참고값
 - **단식 · 남복/여복 복식 · 혼복** 지원, 급수(D조~A조)별 전술·확률 보정
 - **추천 코스 자동 재생** — 대표 랠리 전개를 자동으로 따라가며 흐름을 익히는 모드
+- **게임 규칙 안내** — 공통/단식/복식 규칙을 코트 다이어그램과 함께 쉽게 설명(BWF 공식 규칙 근거)
+- **경기 일정 캘린더** — 서울·경기 지역 동호인 대회 일정을 월 캘린더로 확인, 날짜별 대회 정보와 링크 제공
 - **단일 파일 배포** — 빌드 도구 없이 `mobile/index.html` 하나로 완결(영상·이미지 자산 내장), iOS Safari에서 바로 동작
 
 ## 프로젝트 구조
