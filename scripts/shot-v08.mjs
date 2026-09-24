@@ -1,0 +1,28 @@
+// v0.8 용어 확인: 시작 화면 '남복', 헤더, 초구 갈래 화면의 '→ 코스 선택' 통일. 사용: node scripts/shot-v08.mjs
+import { chromium } from "playwright-core";
+import { mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+const outDir = "/tmp/v08"; mkdirSync(outDir, { recursive: true });
+const browser = await chromium.launch({ executablePath: join(homedir(), ".cache/ms-playwright/chromium-1223/chrome-linux64/chrome"), headless: true, args: ["--no-sandbox"] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
+let n = 0; const shot = async (name) => { n += 1; await page.screenshot({ path: join(outDir, `${String(n).padStart(2, "0")}-${name}.png`) }); console.log("saved", name, "|", await page.locator("#stepTitle").textContent()); };
+const hasNext = () => page.$$eval("button", (bs) => bs.some((b) => b.textContent.trim() === "다음" && !b.disabled && b.offsetParent !== null));
+const next = async () => { await page.getByRole("button", { name: "다음" }).click(); await page.waitForTimeout(2200); };
+const pick = async (re) => { await page.getByRole("button", { name: re }).click(); await page.waitForTimeout(2300); };
+const branchTexts = () => page.$$eval("button", (bs) => bs.filter((b) => b.textContent.includes("→") && b.offsetParent !== null).map((b) => b.textContent.trim()));
+await page.goto("file:///home/fgcp/personal/badmin-simulater/mobile/index.html"); await page.waitForTimeout(500);
+await page.getByRole("button", { name: "남복" }).click(); await page.getByRole("button", { name: "B조" }).click(); await shot("start-namok");
+await page.locator("#btnStart").click(); await page.waitForTimeout(2000);
+console.log("header:", await page.$$eval("header button", (bs) => bs.map((b) => b.textContent.trim())));
+console.log("tabs:", await page.$$eval(".tabs button, nav button", (bs) => bs.map((b) => b.textContent.trim())));
+while (await hasNext()) await next();
+console.log("serve branches:", await branchTexts()); await shot("serve-reply");
+await pick(/B 드라이브/); console.log("drive course branches:", await page.$$eval("button", (bs) => bs.filter((b) => /B-[12]/.test(b.textContent) && b.offsetParent !== null).map((b) => b.textContent.trim()))); await shot("serve-drive-course");
+await page.getByRole("button", { name: /숏서브 · 리시브 측/ }).click(); await page.waitForTimeout(1600);
+while (await hasNext()) await next();
+console.log("recv branches:", await branchTexts()); await shot("recv-choice");
+const body = await page.evaluate(() => document.body.innerText);
+console.log("body has 동성복식:", body.includes("동성복식"), "| has 겨냥 선택:", body.includes("겨냥 선택"), "| version:", (body.match(/초안 v0\.8[^\n]*/) || ["(없음)"])[0]);
+console.log("page errors:", errors.length ? errors : "none"); await browser.close();

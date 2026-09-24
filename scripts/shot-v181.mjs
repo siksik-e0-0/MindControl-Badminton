@@ -1,0 +1,22 @@
+// v1.8.1 확인: 클리어·드롭 랠리 → 빠른 드롭 크로스 → 상대 응수 3갈래(스트레이트/크로스가 상대 위치 기준인지) 화면. 사용: node scripts/shot-v181.mjs
+import { chromium } from "playwright-core";
+import { mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+const outDir = "/tmp/v181"; mkdirSync(outDir, { recursive: true });
+const browser = await chromium.launch({ executablePath: join(homedir(), ".cache/ms-playwright/chromium-1223/chrome-linux64/chrome"), headless: true, args: ["--no-sandbox"] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
+let n = 0; const shot = async (name) => { n += 1; await page.screenshot({ path: join(outDir, `${String(n).padStart(2, "0")}-${name}.png`) }); };
+const next = async () => { await page.getByRole("button", { name: "다음" }).click(); await page.waitForTimeout(2200); };
+const pick = async (re) => { await page.getByRole("button", { name: re }).click(); await page.waitForTimeout(2300); };
+const tab = async (re) => { await page.locator(".tab", { hasText: re }).click(); await page.waitForTimeout(2600); };
+await page.goto("file:///home/fgcp/personal/badmin-simulater/mobile/index.html"); await page.waitForTimeout(500);
+await page.getByRole("button", { name: "단식", exact: true }).click(); await page.locator("#btnStart").click(); await page.waitForTimeout(2600);
+await tab(/클리어·드롭 랠리/); await next(); await pick(/^빠른 드롭 크로스/); await next();
+console.log("응수 선택 화면:", await page.locator("#stepTitle").textContent(), await page.$$eval("#branches .branch .lbl", (ls) => ls.map((l) => l.textContent)));
+await shot("drcr-opp-choice");
+await pick(/리프트 크로스/); console.log("장면:", await page.locator("#stepTitle").textContent()); await shot("drcr-opp-liftcross");
+await page.getByRole("button", { name: "이전" }).click(); await page.waitForTimeout(1500); await pick(/리프트 스트레이트/); console.log("장면:", await page.locator("#stepTitle").textContent()); await shot("drcr-opp-liftstraight");
+console.log("버전:", await page.locator("#version").textContent()); console.log("page errors:", errors.length ? errors : "none");
+await browser.close();

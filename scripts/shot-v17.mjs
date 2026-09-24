@@ -1,0 +1,54 @@
+// v1.7 확인: 단식 주제 2 「숏서브 · 리시브 측」 흐름(리프트→상대 3구, 타이트 네트→상대 3구, 플릭→스매시) + 주제 1 드롭 뒤 복귀 정정 화면. 사용: node scripts/shot-v17.mjs
+import { chromium } from "playwright-core";
+import { mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+const outDir = "/tmp/v17"; mkdirSync(outDir, { recursive: true });
+const browser = await chromium.launch({ executablePath: join(homedir(), ".cache/ms-playwright/chromium-1223/chrome-linux64/chrome"), headless: true, args: ["--no-sandbox"] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
+let n = 0; const shot = async (name) => { n += 1; await page.screenshot({ path: join(outDir, `${String(n).padStart(2, "0")}-${name}.png`) }); };
+const next = async () => { await page.getByRole("button", { name: "다음" }).click(); await page.waitForTimeout(2200); };
+const pick = async (re) => { await page.getByRole("button", { name: re }).click(); await page.waitForTimeout(2300); };
+const restart = async () => { await page.getByRole("button", { name: "처음", exact: true }).click(); await page.waitForTimeout(1200); };
+const tab = async (re) => { await page.locator(".tab", { hasText: re }).click(); await page.waitForTimeout(2600); };
+const problems = [];
+const check = async (tag, expectTitle) => {
+  const title = (await page.locator("#stepTitle").textContent()).trim();
+  const hint = (await page.locator("#branches .est").count()) ? (await page.locator("#branches .est").textContent()).trim() : "";
+  const locks = await page.locator("#branches .pct.lock").count();
+  const pcts = await page.$$eval("#branches .pct", (els) => els.map((e) => e.textContent));
+  const end = (await page.locator("#endNote").textContent()).trim();
+  const kinds = await page.$$eval("#notes .kind", (els) => els.map((e) => e.textContent).join("·"));
+  console.log("==", tag, "|", title, "| %:", pcts.join(" ") || "-", "| 잠금", locks, "|", kinds, end ? "| 끝: " + end.slice(0, 40) : "");
+  if (expectTitle && !expectTitle.test(title)) problems.push(tag + ": 제목 " + title);
+  if (/D조|C조|B조|A조/.test(hint) || locks) problems.push(tag + ": 급수/잠금");
+};
+await page.goto("file:///home/fgcp/personal/badmin-simulater/mobile/index.html"); await page.waitForTimeout(500);
+await page.getByRole("button", { name: "단식", exact: true }).click(); await page.locator("#btnStart").click(); await page.waitForTimeout(2600);
+console.log("탭:", await page.$$eval("#topics .tab", (ts) => ts.map((t) => t.textContent)));
+// 주제 1 정정 화면: 드롭 → 내 백핸드 앞 (상대 복귀 '뒤')
+await next(); await pick(/^빠른 드롭 → 코스/); await pick(/스트레이트 \(내 백핸드 앞\)/); await check("주제1 드롭 뒤(정정)", /상대 빠른 드롭 → 내 백핸드 앞/);
+const moveTxt = await page.$$eval("#notes li", (ls) => ls.map((l) => l.textContent).find((t) => t.startsWith("이동")) || "");
+console.log("  이동 문구:", moveTxt); if (!/뒤로 치우쳐/.test(moveTxt)) problems.push("주제1 드롭 뒤 이동 문구");
+await shot("t1-drop-fixed");
+// 주제 2
+await tab(/숏서브 · 리시브 측/); await check("0 준비", /0 준비/); await shot("rs0");
+await next(); await check("1 서브 선택", /상대 서브 — 어디로/); await shot("rs1");
+await pick(/로우 서브 → T/); await check("1 서브 T 장면", /로우 서브 → T/); await shot("rs1-t");
+await next(); await check("2 내 리턴 선택", /내 리턴 — 백핸드/); await shot("rs2-t");
+await pick(/^리프트 → 코스/); await check("2 리프트 코스", /리프트 — 어디로/); await shot("rs2-t-lift");
+await pick(/상대 백핸드 뒤/); await check("2구 리프트 장면", /2구: 리프트/); await shot("rs2-lift-scene");
+await next(); await check("3 상대 3구 예상", /상대 3구 예상/); await shot("rs3-opp");
+await pick(/^클리어 → 내 뒤/); await check("3구 상대 클리어(끝)", /3구: 상대 클리어/); await shot("rs3-clear-end");
+await restart(); await next(); await pick(/로우 서브 → 내 몸/); await next(); await pick(/^네트샷 → 코스/); await pick(/타이트 스트레이트/); await check("2구 타이트 네트", /2구: 네트샷/); await shot("rs2-net-scene");
+await next(); await check("3 상대 3구(네트 뒤)", /상대 3구 예상/); await shot("rs3-opp-net");
+await pick(/리프트 짧게/); await check("3구 리프트 짧게(끝)", /3구: 상대 리프트 짧게/); await shot("rs3-shortlift-end");
+await restart(); await next(); await pick(/플릭 서브/); await check("1 플릭 장면", /플릭 서브 → 내 포핸드 뒤/); await shot("rs1-flick");
+await next(); await check("2 플릭 리턴 선택", /내 리턴 — 포핸드 오버헤드/); await pick(/^스매시 — 균형/); await check("2구 스매시(끝)", /2구: 스매시/); await shot("rs2-flick-smash");
+await restart(); await next(); await pick(/로우 서브 → 와이드/); await next(); await pick(/속임 백핸드/); await check("2구 속임 네트(끝)", /2구: 속임 네트샷/); await shot("rs2-decep");
+console.log("버전:", await page.locator("#version").textContent());
+console.log("문제:", problems.length ? problems : "없음");
+console.log("page errors:", errors.length ? errors : "none");
+await browser.close();
+process.exit(problems.length || errors.length ? 1 : 0);

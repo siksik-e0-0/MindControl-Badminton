@@ -1,0 +1,13 @@
+import { chromium } from "playwright-core";
+import { homedir } from "node:os";
+import { join } from "node:path";
+const browser = await chromium.launch({ executablePath: join(homedir(), ".cache/ms-playwright/chromium-1223/chrome-linux64/chrome"), headless: true, args: ["--no-sandbox"] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
+await page.goto("file:///home/fgcp/personal/badmin-simulater/mobile/index.html"); await page.waitForTimeout(500);
+await page.getByRole("button", { name: "남복" }).click(); await page.getByRole("button", { name: "B조" }).click(); await page.locator("#btnStart").click(); await page.waitForTimeout(1500);
+console.log("tabs:", await page.$$eval("#topics button", (bs) => bs.map((b) => b.textContent.trim())));
+await page.getByRole("button", { name: /롱 서브 · 서브 측/ }).click(); await page.waitForTimeout(1800);
+console.log("title:", await page.locator("#stepTitle").textContent(), "| version:", await page.locator("#version").textContent());
+await page.screenshot({ path: "/tmp/v082-long-serve.png" });
+console.log("page errors:", errors.length ? errors : "none"); await browser.close();

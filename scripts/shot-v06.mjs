@@ -1,0 +1,81 @@
+// v0.6 확인: 시작 화면(종목·급수) → 갈래 화살표+비율 → 급수 변경 시 비율 변화 → 혼복. 사용: node scripts/shot-v06.mjs /tmp/v06shots
+import { chromium } from "playwright-core";
+import { mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+
+const [outDir = "/tmp/v06shots"] = process.argv.slice(2);
+mkdirSync(outDir, { recursive: true });
+const browser = await chromium.launch({ executablePath: join(homedir(), ".cache/ms-playwright/chromium-1223/chrome-linux64/chrome"), headless: true, args: ["--no-sandbox"] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const errors = [];
+page.on("pageerror", (e) => errors.push(String(e)));
+page.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
+let n = 0;
+const shot = async (name) => { n += 1; const f = join(outDir, `${String(n).padStart(2, "0")}-${name}.png`); await page.screenshot({ path: f }); console.log("saved", f, "|", (await page.locator("#stepTitle").textContent()) || ""); };
+const next = async () => { await page.getByRole("button", { name: "다음" }).click(); await page.waitForTimeout(2200); };
+const pick = async (re) => { await page.getByRole("button", { name: re }).click(); await page.waitForTimeout(2300); };
+const tab = async (re) => { await page.getByRole("button", { name: re }).click(); await page.waitForTimeout(1600); };
+const pcts = async () => page.$$eval(".branch", (bs) => bs.map((b) => (b.querySelector(".lbl")?.textContent || "").slice(0, 14) + " " + (b.querySelector(".pct")?.textContent || "-")));
+const arrows = async () => page.$$eval("#court g:nth-of-type(3) line", (ls) => ls.length);
+
+await page.goto("file:///home/fgcp/personal/badmin-simulater/mobile/index.html");
+await page.waitForTimeout(800);
+await shot("start-empty");
+console.log("start button disabled:", await page.locator("#btnStart").isDisabled());
+await page.getByRole("button", { name: "남복" }).click();
+await page.getByRole("button", { name: "B조" }).click();
+await page.waitForTimeout(300);
+await shot("start-selected");
+await page.getByRole("button", { name: "시작" }).click();
+await page.waitForTimeout(2300);
+console.log("settings button:", await page.locator("#btnSettings").textContent());
+console.log("tabs:", await page.$$eval(".tab", (b) => b.map((x) => x.textContent)));
+await next();
+await shot("reply-arrows-B");
+console.log("reply B조:", await pcts(), "arrows:", await arrows());
+await pick(/A 푸시/);
+await shot("Acourse-arrows-B");
+console.log("Acourse B조:", await pcts(), "arrows:", await arrows());
+// 급수만 D조로 변경 → 같은 화면에서 비율 변화
+await page.locator("#btnSettings").click();
+await page.waitForTimeout(300);
+await shot("settings-reopen");
+await page.getByRole("button", { name: "D조" }).click();
+await page.getByRole("button", { name: "시작" }).click();
+await page.waitForTimeout(600);
+await shot("Acourse-arrows-D");
+console.log("Acourse D조:", await pcts());
+await page.getByRole("button", { name: "이전" }).click(); await page.waitForTimeout(2200);
+console.log("reply D조:", await pcts());
+await page.locator("#btnSettings").click(); await page.waitForTimeout(200);
+await page.getByRole("button", { name: "A조" }).click();
+await page.getByRole("button", { name: "시작" }).click(); await page.waitForTimeout(600);
+console.log("reply A조:", await pcts());
+await shot("reply-arrows-A");
+// 리시브 측 초구 선택
+await tab(/숏서브 · 리시브 측/);
+await next(); await next();
+await shot("recv-choice-arrows-A");
+console.log("recv choice A조:", await pcts(), "arrows:", await arrows());
+// 공수 전환: 스매시 뒤 수비 4갈래 (shot + 갈래 동시)
+await tab(/공수 전환 랠리/);
+await next();
+await pick(/나 드라이브 카운터/);
+await pick(/B가 늦어/);
+await next();
+await shot("trans-t4smash-arrows-A");
+console.log("t4smash A조:", await pcts(), "arrows:", await arrows());
+// 혼복으로 전환 → 규칙 갈래(noProb)
+await page.locator("#btnSettings").click(); await page.waitForTimeout(200);
+await page.getByRole("button", { name: "혼복" }).click();
+await page.getByRole("button", { name: "C조" }).click();
+await page.getByRole("button", { name: "시작" }).click(); await page.waitForTimeout(2000);
+console.log("mixed tabs:", await page.$$eval(".tab", (b) => b.map((x) => x.textContent)));
+await shot("mixed-mstart-noProb");
+console.log("mstart (noProb):", await pcts(), "arrows:", await arrows());
+await pick(/여자\(W\) 서브/);
+await shot("mixed-mw-serve-arrows");
+console.log("mw_serve C조:", await pcts());
+console.log("page errors:", errors.length ? errors : "none");
+await browser.close();

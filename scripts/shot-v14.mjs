@@ -1,0 +1,51 @@
+// v1.4 확인: 설명 줄에 출처 배지가 없고, 범례 문단이 없고, 접기 제목이 '출처'인지 — 서브 측·리시브 측·롱 서브·드라이브·공수 전환 화면 캡처(첫 화면은 출처 접기를 펼친 것도). 사용: node scripts/shot-v14.mjs
+import { chromium } from "playwright-core";
+import { mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
+const outDir = "/tmp/v14"; mkdirSync(outDir, { recursive: true });
+const browser = await chromium.launch({ executablePath: join(homedir(), ".cache/ms-playwright/chromium-1223/chrome-linux64/chrome"), headless: true, args: ["--no-sandbox"] });
+const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+const errors = []; page.on("pageerror", (e) => errors.push(String(e)));
+let n = 0; const shot = async (name) => { n += 1; await page.screenshot({ path: join(outDir, `${String(n).padStart(2, "0")}-${name}.png`) }); };
+const next = async () => { await page.getByRole("button", { name: "다음" }).click(); await page.waitForTimeout(2200); };
+const pick = async (re) => { await page.getByRole("button", { name: re }).click(); await page.waitForTimeout(2300); };
+const tab = async (re) => { await page.locator(".tab", { hasText: re }).click(); await page.waitForTimeout(2600); };
+const problems = [];
+const check = async (tag) => {
+  const title = await page.locator("#stepTitle").textContent();
+  const badges = await page.$$eval("#notes .src, #notes a", (els) => els.length);
+  const noteN = await page.$$eval("#notes li", (els) => els.length);
+  const legend = await page.locator(".legend").count();
+  const summary = (await page.locator("details.sources summary").textContent()).trim();
+  console.log("==", tag, "|", title, "| 노트", noteN, "| 배지/링크", badges, "| 범례", legend, "| 접기 제목:", summary);
+  if (badges) problems.push(tag + ": 설명 줄에 배지/링크 " + badges);
+  if (legend) problems.push(tag + ": 범례 남음");
+  if (summary !== "출처") problems.push(tag + ": 접기 제목 " + summary);
+};
+await page.goto("file:///home/fgcp/personal/badmin-simulater/mobile/index.html"); await page.waitForTimeout(500);
+await page.getByRole("button", { name: "남복/여복", exact: true }).click(); await page.getByRole("button", { name: "D조(초급)", exact: true }).click(); await page.locator("#btnStart").click(); await page.waitForTimeout(2600);
+await check("서브 0"); await shot("serve0");
+// 출처 접기를 펼친 화면: 접기 위치로 스크롤해 항목 수와 링크 수를 센다
+await page.locator("details.sources summary").click(); await page.waitForTimeout(400);
+await page.locator("details.sources").scrollIntoViewIfNeeded(); await page.waitForTimeout(300);
+const srcItems = await page.$$eval("#sourceList li", (els) => els.length);
+const srcLinks = await page.$$eval("#sourceList a", (els) => els.length);
+console.log("출처 접기 펼침: 항목", srcItems, "링크", srcLinks);
+await shot("serve0-sources-open");
+await page.locator("details.sources summary").click(); await page.waitForTimeout(300);
+await next(); await check("초구 응수"); await shot("serve-reply");
+await pick(/^A 푸시/); await pick(/A-2 크로스/); await next(); await check("3구 선택"); await shot("serve-third");
+await pick(/푸시/); await pick(/뒤 코너|스트레이트/); await check("3구 잎"); await shot("serve-third-leaf");
+await tab(/숏서브 · 리시브 측/); await check("리시브 0"); await next(); await next(); await check("리시브 초구 선택"); await shot("recv-choice");
+await tab(/롱 서브 · 서브 측/); await check("롱 서브 0"); await shot("flick0");
+await tab(/드라이브 랠리/); await check("드라이브 0"); await next(); await pick(/내가 앞에서/); await check("드라이브 dr2f"); await shot("drive-dr2f");
+await tab(/공수 전환/); await check("공수 전환 0"); await next(); await check("t1"); await shot("trans-t1");
+await pick(/나 드라이브 카운터/); await pick(/늦어 네트 아래/); await next(); await check("t4smash(급수 줄)"); await shot("trans-t4smash");
+// 네트샷 뒤 화면(급수 줄에 배지가 붙던 곳): 서브 측 초구 응수에서 네트샷 갈래
+await tab(/숏서브 · 서브 측/); await next(); await pick(/네트샷/); await check("초구 네트샷 뒤(급수 줄)"); await shot("serve-net-after");
+console.log("버전:", await page.locator("#version").textContent());
+console.log("문제:", problems.length ? problems : "없음");
+console.log("page errors:", errors.length ? errors : "none");
+await browser.close();
+process.exit(problems.length || errors.length ? 1 : 0);
