@@ -81,6 +81,9 @@
   .tech-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
   .tech-chip { min-height: 32px; padding: 0 10px; border: 1.5px solid #ccc; background: #fff; border-radius: 8px; font-size: 13px; color: var(--ink); }
   .tech-chip.on { background: var(--orange); color: #fff; border-color: var(--orange); font-weight: 700; }
+  .tech-vchip { min-height: 28px; font-size: 12px; border-style: dashed; }
+  .tech-vchip.on { background: var(--navy); color: #fff; border-color: var(--navy); border-style: solid; }
+  .tech-varlbl { align-self: center; font-size: 11px; color: var(--muted); margin-right: 2px; }
   .tech-view { background: rgba(255,255,255,.55); border-radius: 10px; padding: 6px 4px 2px; }
   .tech-svg { width: 100%; height: 190px; display: block; }
   .tech-svg.top { height: 270px; }
@@ -170,6 +173,7 @@
     <h2>기술 배우기</h2>
     <div class="tech-tabs" id="techTabs"></div>
     <div class="tech-chips" id="techChips"></div>
+    <div class="tech-chips" id="techVars"></div>
     <div class="tech-view">
       <svg id="techSvg" class="tech-svg" aria-label="기술 궤적"></svg>
     </div>
@@ -327,7 +331,7 @@ const SOURCES = {
 // 각 노드: shot(누가 어디서 어디로), pos(샷 뒤 네 명 위치), formation, arrow(로테이션 신호), notes(설명+출처)
 // ============================================================================
 const DATA = {
-  version: "v2.32",
+  version: "v2.33",
   topics: [
     {
       id: "serve-side", sport: "level",
@@ -3630,67 +3634,107 @@ DATA.topics.push(buildSinglesSmashDefence());
   // top: 위에서 본 코스 — 게임 화면과 같은 코트 좌표([x, y], 내 진영 y>0).
   // vars: 데이터(shot.type)에 쓰인 변형 이름 — 이 화면이 실제 게임에 나오는 기술을 빠짐없이 덮는지 대조용이기도 하다.
   const TECHS = [
-    { id: "shortserve", g: "서브", name: "숏서브", from: [-2.0, 1.0], to: [1.6, 0.05], apex: 1.75, at: 0.55, ms: 900,
-      top: [0.6, 2.2, -1.0, -2.0], vars: ["로우 서브"],
-      when: "상대에게 공격 기회를 주지 않고 시작할 때", aim: "네트를 겨우 넘겨 상대가 올려치게 만든다", risk: "조금만 떠도 네트에서 바로 얻어맞는다" },
-    { id: "longserve", g: "서브", name: "롱서브", from: [-2.0, 1.0], to: [5.9, 0.05], apex: 6.8, at: 0.5, ms: 1300,
-      top: [0.6, 2.2, -1.2, -5.9], vars: ["하이 서브"],
-      when: "단식에서 상대를 뒤로 밀어낼 때", aim: "끝선 가까이 깊게 떨어뜨려 공격을 늦춘다", risk: "짧으면 그대로 스매시를 준다" },
-    { id: "flickserve", g: "서브", name: "플릭 서브", from: [-2.0, 1.0], to: [4.9, 0.05], apex: 3.0, at: 0.45, ms: 800,
-      top: [0.6, 2.2, -1.2, -5.0], vars: [],
-      when: "상대가 숏서브를 노리고 앞으로 바짝 붙을 때", aim: "머리 위로 빠르게 넘겨 뒤로 밀어낸다", risk: "읽히면 뒤에서 스매시로 돌아온다" },
-    { id: "smash", g: "뒤 공격", name: "스매시", from: [-5.0, 3.0], to: [2.6, 0.05], apex: 3.0, at: 0.03, ms: 500,
-      top: [-0.3, 5.0, -1.6, -2.6], vars: ["슬라이스"],
-      when: "높은 타점에서 점수를 끝내려 할 때", aim: "가파르게 내리꽂아 받기 어렵게 만든다", risk: "빗나가면 내 자세가 무너져 역공을 받는다" },
-    { id: "fastdrop", g: "뒤 공격", name: "빠른 드롭", from: [-5.0, 2.8], to: [1.3, 0.05], apex: 2.8, at: 0.03, ms: 650,
-      top: [-0.3, 5.0, -1.3, -1.3], vars: [],
-      when: "스매시가 부담스러울 때 앞을 흔들려고", aim: "네트를 넘자마자 떨어뜨려 상대를 앞으로 끌어낸다", risk: "높이 뜨면 상대가 밀고 들어온다" },
-    { id: "drop", g: "뒤 공격", name: "드롭", from: [-5.0, 2.8], to: [0.95, 0.05], apex: 2.8, at: 0.05, ms: 900,
-      top: [-0.3, 5.0, -1.2, -0.95], vars: ["드롭(빠르게)", "드롭(소프트)"],
-      when: "상대를 앞으로 끌어내 뒤를 비우려 할 때", aim: "네트 바로 앞에 살짝 떨군다", risk: "느려서 읽히면 네트 앞에서 잡힌다" },
-    { id: "attackclear", g: "뒤 공격", name: "공격 클리어", from: [-5.0, 2.8], to: [6.2, 0.05], apex: 4.0, at: 0.45, ms: 700,
-      top: [-0.3, 5.0, -1.2, -6.2], vars: [],
-      when: "상대가 앞으로 쏠려 있을 때", aim: "낮고 빠르게 뒤로 넘겨 자세를 무너뜨린다", risk: "높이가 낮아 가로채이면 바로 역공" },
-    { id: "clear", g: "뒤 공격", name: "클리어", from: [-5.0, 2.7], to: [6.3, 0.05], apex: 6.8, at: 0.5, ms: 1250,
-      top: [-0.3, 5.0, -1.0, -6.3], vars: [],
-      when: "시간을 벌고 자세를 회복해야 할 때", aim: "높고 깊게 끝선까지 보낸다", risk: "짧으면 스매시를 얻어맞는다" },
-    { id: "drive", g: "전환", name: "드라이브", from: [-3.2, 1.45], to: [3.6, 1.15], apex: 1.75, at: 0.5, ms: 550,
-      top: [1.5, 3.2, 1.8, -3.6], vars: ["드라이브(뜸)", "드라이브(높게)", "드라이브(카운터)"],
-      when: "중간 높이 공을 빠르게 주고받는 상황에서", aim: "네트를 스치듯 평행하게 밀어붙여 주도권을 잡는다", risk: "조금이라도 뜨면 바로 얻어맞는다" },
-    { id: "net", g: "네트 앞", name: "네트샷(헤어핀)", from: [-0.85, 1.15], to: [0.95, 0.05], apex: 1.68, at: 0.5, ms: 900,
-      top: [1.2, 0.85, 1.3, -0.95], vars: ["속임 네트샷", "네트샷(크로스)"],
-      when: "네트 앞 낮은 공을 받을 때", aim: "네트에 붙여 떨어뜨려 상대가 올리게 만든다", risk: "뜨면 네트킬로 바로 끝난다" },
-    { id: "crossnet", g: "네트 앞", name: "크로스 네트샷", from: [-0.85, 1.15], to: [0.95, 0.05], apex: 1.7, at: 0.5, ms: 950,
-      top: [1.2, 0.85, -1.5, -0.9], vars: [],
-      when: "상대가 스트레이트 쪽을 지키고 있을 때", aim: "대각선으로 빼 상대를 멀리 뛰게 만든다", risk: "비거리가 길어 가로채이기 쉽다" },
-    { id: "kill", g: "네트 앞", name: "킬", from: [-0.75, 1.95], to: [1.9, 0.05], apex: 1.95, at: 0.02, ms: 420,
-      top: [1.1, 0.75, 1.4, -1.9], vars: ["킬/푸시", "킬/네트샷"],
-      when: "상대 네트샷이 네트 위로 떴을 때", aim: "네트 위에서 아래로 찍어 그대로 끝낸다", risk: "라켓이나 몸이 네트에 닿으면 반칙" },
-    { id: "push", g: "네트 앞", name: "푸시", from: [-0.85, 1.5], to: [3.3, 0.05], apex: 1.62, at: 0.35, ms: 620,
-      top: [1.2, 0.85, 2.2, -3.3], vars: ["푸시(크로스)", "푸시(몸)", "푸시(뒤 코너)"],
-      when: "네트 앞에서 조금 뜬 공을 받을 때", aim: "전위 옆으로 밀어 넣어 후위가 올리게 만든다", risk: "속도가 어중간하면 전위에게 가로채인다" },
-    { id: "lift", g: "수비", name: "리프트", from: [-1.1, 0.55], to: [6.0, 0.05], apex: 6.5, at: 0.5, ms: 1250,
-      top: [1.1, 1.1, -1.2, -6.0], vars: ["리프트(짧음)"],
-      when: "네트 앞에서 더 나은 선택이 없을 때", aim: "깊게 올려 시간을 벌고 수비 대형을 갖춘다", risk: "짧으면 스매시를 그대로 준다" },
-    { id: "block", g: "수비", name: "블록", from: [-2.6, 0.85], to: [0.85, 0.05], apex: 1.15, at: 0.55, ms: 800,
-      top: [0.6, 2.6, 0.8, -0.85], vars: [],
-      when: "스매시를 받아낼 때", aim: "네트 앞에 짧게 떨궈 상대 공격을 끊는다", risk: "뜨면 네트 앞에서 잡힌다" },
-    { id: "longblock", g: "수비", name: "롱 블록", from: [-2.6, 0.85], to: [3.4, 0.05], apex: 2.1, at: 0.5, ms: 900,
-      top: [0.6, 2.6, 1.6, -3.4], vars: [],
-      when: "상대 전위가 네트에 바짝 붙어 있을 때", aim: "전위 머리 위로 넘겨 미드코트로 보낸다", risk: "짧으면 그대로 가로채인다" }
+    { id: "shortserve", g: "서브", name: "숏서브", from: [-2.0, 1.0], net: 1.68, to: [1.6, 0.05], ms: 900,
+      top: [0.6, 2.2, -1.0, -2.0],
+      when: "상대에게 공격 기회를 주지 않고 시작할 때", aim: "네트를 겨우 넘겨 상대가 올려치게 만든다", risk: "조금만 떠도 네트에서 바로 얻어맞는다",
+      vars: [{ name: "로우 서브", note: "같은 기술을 가리키는 다른 이름이다 — 낮게 깔아 넘기는 서브." }] },
+    { id: "longserve", g: "서브", name: "롱서브", from: [-2.0, 1.0], net: 5.6, to: [5.9, 0.05], ms: 1300,
+      top: [0.6, 2.2, -1.2, -5.9],
+      when: "단식에서 상대를 뒤로 밀어낼 때", aim: "끝선 가까이 깊게 떨어뜨려 공격을 늦춘다", risk: "짧으면 그대로 스매시를 준다",
+      vars: [{ name: "하이 서브", note: "같은 기술을 가리키는 다른 이름이다 — 높이 띄워 뒤로 보내는 서브." }] },
+    { id: "flickserve", g: "서브", name: "플릭 서브", from: [-2.0, 1.0], net: 2.5, to: [4.9, 0.05], ms: 800,
+      top: [0.6, 2.2, -1.2, -5.0],
+      when: "상대가 숏서브를 노리고 앞으로 바짝 붙을 때", aim: "머리 위로 빠르게 넘겨 뒤로 밀어낸다", risk: "읽히면 뒤에서 스매시로 돌아온다",
+      vars: [] },
+    { id: "smash", g: "뒤 공격", name: "스매시", from: [-5.0, 3.0], net: 1.95, to: [2.6, 0.05], ms: 500,
+      top: [-0.3, 5.0, -1.6, -2.6],
+      when: "높은 타점에서 점수를 끝내려 할 때", aim: "가파르게 내리꽂아 받기 어렵게 만든다", risk: "빗나가면 내 자세가 무너져 역공을 받는다",
+      vars: [{ name: "슬라이스", note: "라켓면을 비껴 깎아 친다. 속도는 줄지만 각이 더 서고, 같은 폼에서 나와 상대가 타이밍을 뺏긴다.", net: 1.85, to: [1.9, 0.05], ms: 680 }] },
+    { id: "fastdrop", g: "뒤 공격", name: "빠른 드롭", from: [-5.0, 2.8], net: 1.78, to: [1.5, 0.05], ms: 650,
+      top: [-0.3, 5.0, -1.3, -1.3],
+      when: "스매시가 부담스러울 때 앞을 흔들려고", aim: "네트를 넘자마자 떨어뜨려 상대를 앞으로 끌어낸다", risk: "높이 뜨면 상대가 밀고 들어온다",
+      vars: [] },
+    { id: "drop", g: "뒤 공격", name: "드롭", from: [-5.0, 2.8], net: 1.7, to: [1.15, 0.05], ms: 900,
+      top: [-0.3, 5.0, -1.2, -0.95],
+      when: "상대를 앞으로 끌어내 뒤를 비우려 할 때", aim: "네트 바로 앞에 살짝 떨군다", risk: "느려서 읽히면 네트 앞에서 잡힌다",
+      vars: [{ name: "드롭(빠르게)", note: "같은 드롭을 더 세게 쳐 상대가 앞으로 붙을 시간을 줄인다. 그만큼 덜 짧게 떨어진다.", ms: 650, to: [1.45, 0.05] },
+             { name: "드롭(소프트)", note: "더 부드럽게 쳐 네트에 바짝 붙인다. 느린 만큼 읽히면 앞에서 잡힌다.", ms: 1100, net: 1.64, to: [0.9, 0.05] }] },
+    { id: "attackclear", g: "뒤 공격", name: "공격 클리어", from: [-5.0, 2.8], net: 3.6, to: [6.2, 0.05], ms: 700,
+      top: [-0.3, 5.0, -1.2, -6.2],
+      when: "상대가 앞으로 쏠려 있을 때", aim: "낮고 빠르게 뒤로 넘겨 자세를 무너뜨린다", risk: "높이가 낮아 가로채이면 바로 역공",
+      vars: [] },
+    { id: "clear", g: "뒤 공격", name: "클리어", from: [-5.0, 2.7], net: 6.2, to: [6.3, 0.05], ms: 1250,
+      top: [-0.3, 5.0, -1.0, -6.3],
+      when: "시간을 벌고 자세를 회복해야 할 때", aim: "높고 깊게 끝선까지 보낸다", risk: "짧으면 스매시를 얻어맞는다",
+      vars: [] },
+    { id: "drive", g: "전환", name: "드라이브", from: [-3.2, 1.45], net: 1.68, to: [3.6, 1.15], ms: 550,
+      top: [1.5, 3.2, 1.8, -3.6],
+      when: "중간 높이 공을 빠르게 주고받는 상황에서", aim: "네트를 스치듯 평행하게 밀어붙여 주도권을 잡는다", risk: "조금이라도 뜨면 바로 얻어맞는다",
+      vars: [{ name: "드라이브(뜸)", note: "실수로 떠버린 드라이브다. 상대에게 내리칠 기회를 그대로 준다.", net: 2.15, to: [3.4, 1.55] },
+             { name: "드라이브(높게)", note: "일부러 조금 높여 상대 뒤쪽까지 보낸다. 뜬 만큼 위험도 같이 커진다.", net: 2.0, to: [4.3, 1.3] },
+             { name: "드라이브(카운터)", note: "상대 드라이브를 그대로 되받아친다. 라켓을 미리 들고 있어야 나오는 샷.", ms: 470 }] },
+    { id: "net", g: "네트 앞", name: "네트샷(헤어핀)", from: [-0.85, 1.15], net: 1.6, to: [0.95, 0.05], ms: 900,
+      top: [1.2, 0.85, 1.3, -0.95],
+      when: "네트 앞 낮은 공을 받을 때", aim: "네트에 붙여 떨어뜨려 상대가 올리게 만든다", risk: "뜨면 네트킬로 바로 끝난다",
+      vars: [{ name: "속임 네트샷", note: "치는 동작을 한 번 멈췄다가 늦게 보내 상대 발을 묶는다. 궤적은 같고 타이밍만 다르다.", ms: 1250 },
+             { name: "네트샷(크로스)", note: "같은 네트샷을 대각선으로 보낸다 — 높이는 같고 코스만 다르다(위에서 보기로 확인).", top: [1.2, 0.85, -1.5, -0.9] }] },
+    { id: "crossnet", g: "네트 앞", name: "크로스 네트샷", from: [-0.85, 1.15], net: 1.62, to: [0.95, 0.05], ms: 950,
+      top: [1.2, 0.85, -1.5, -0.9],
+      when: "상대가 스트레이트 쪽을 지키고 있을 때", aim: "대각선으로 빼 상대를 멀리 뛰게 만든다", risk: "비거리가 길어 가로채이기 쉽다",
+      vars: [] },
+    { id: "kill", g: "네트 앞", name: "킬", from: [-0.75, 1.95], net: 1.62, to: [1.9, 0.05], ms: 420,
+      top: [1.1, 0.75, 1.4, -1.9],
+      when: "상대 네트샷이 네트 위로 떴을 때", aim: "네트 위에서 아래로 찍어 그대로 끝낸다", risk: "라켓이나 몸이 네트에 닿으면 반칙",
+      vars: [{ name: "킬/푸시", note: "각이 안 나올 때 찍는 대신 밀어 보낸다. 덜 가파르고 더 멀리 간다.", net: 1.6, to: [2.8, 0.05], ms: 520 },
+             { name: "킬/네트샷", note: "높이가 모자라면 찍지 않고 네트에 떨군다. 무리하게 찍으면 네트에 걸린다.", net: 1.58, to: [0.9, 0.05], ms: 820 }] },
+    { id: "push", g: "네트 앞", name: "푸시", from: [-0.85, 1.5], net: 1.6, to: [3.3, 0.05], ms: 620,
+      top: [1.2, 0.85, 2.2, -3.3],
+      when: "네트 앞에서 조금 뜬 공을 받을 때", aim: "전위 옆으로 밀어 넣어 후위가 올리게 만든다", risk: "속도가 어중간하면 전위에게 가로채인다",
+      vars: [{ name: "푸시(크로스)", note: "대각선으로 밀어 상대를 멀리 뛰게 만든다. 비거리가 길어 가로채일 틈도 는다.", top: [1.2, 0.85, -2.2, -3.0] },
+             { name: "푸시(몸)", note: "상대 몸쪽으로 밀어 라켓을 쓰기 어렵게 만든다. 포핸드·백핸드 판단을 늦춘다.", top: [1.2, 0.85, 0.2, -3.0] },
+             { name: "푸시(뒤 코너)", note: "더 깊게 밀어 뒤 코너까지 보낸다. 전위 머리 위를 넘겨야 해 조금 더 높다.", net: 1.75, to: [4.4, 0.05], top: [1.2, 0.85, 2.4, -4.6] }] },
+    { id: "lift", g: "수비", name: "리프트", from: [-1.1, 0.55], net: 5.8, to: [6.0, 0.05], ms: 1250,
+      top: [1.1, 1.1, -1.2, -6.0],
+      when: "네트 앞에서 더 나은 선택이 없을 때", aim: "깊게 올려 시간을 벌고 수비 대형을 갖춘다", risk: "짧으면 스매시를 그대로 준다",
+      vars: [{ name: "리프트(짧음)", note: "덜 깊게 올린다. 시간은 덜 벌리지만 상대를 뒤로 밀어 앞을 비우게 만든다.", net: 4.2, to: [4.2, 0.05], ms: 1050 }] },
+    { id: "block", g: "수비", name: "블록", from: [-2.6, 0.85], net: 1.6, to: [0.85, 0.05], ms: 800,
+      top: [0.6, 2.6, 0.8, -0.85],
+      when: "스매시를 받아낼 때", aim: "네트 앞에 짧게 떨궈 상대 공격을 끊는다", risk: "뜨면 네트 앞에서 잡힌다",
+      vars: [] },
+    { id: "longblock", g: "수비", name: "롱 블록", from: [-2.6, 0.85], net: 1.75, to: [3.4, 0.05], ms: 900,
+      top: [0.6, 2.6, 1.6, -3.4],
+      when: "상대 전위가 네트에 바짝 붙어 있을 때", aim: "전위 머리 위로 넘겨 미드코트로 보낸다", risk: "짧으면 그대로 가로채인다",
+      vars: [] }
   ];
   const NET_H = 1.524; // BWF 규정 — 네트 중앙 높이
-  let techId = TECHS[0].id, techGroup = TECHS[0].g, techMode = "side", techAnim = 0;
+  let techId = TECHS[0].id, techGroup = TECHS[0].g, techVar = -1, techMode = "side", techAnim = 0;
 
-  // 2차 베지어가 (at 지점, apex 높이)를 지나도록 제어점을 역산한다.
-  function techCtrl(f, t, apex, a) {
-    const bx = f[0] + (t[0] - f[0]) * a;
-    const k = 2 * (1 - a) * a;
-    return [(bx - (1 - a) * (1 - a) * f[0] - a * a * t[0]) / k, (apex - (1 - a) * (1 - a) * f[1] - a * a * t[1]) / k];
+  // 변형은 base에서 필요한 값만 덮어쓴다(이름·설명은 변형 것, 나머지는 base 값).
+  function techOf(base, vi) {
+    if (vi < 0 || !base.vars[vi]) return base;
+    const v = base.vars[vi];
+    return Object.assign({}, base, v, { name: v.name, baseName: base.name });
+  }
+  // 궤적은 from →(네트 위 net 높이)→ to 두 구간으로 그린다. 네트 통과점이 곡선 위에 못 박히므로
+  // 어떤 값을 넣어도 궤적이 네트를 뚫지 않고, 뒤 구간 제어점을 네트 높이에 두면 셔틀 특유의
+  // "넘자마자 떨어짐"이 자연스럽게 나온다.
+  function techCurve(tech) {
+    const f = [tech.from[0], -tech.from[1]], n = [0, -tech.net], t = [tech.to[0], -tech.to[1]];
+    // 올려 보내는 기술은 타점 직후 빠르게 떠오르고, 내려치는 기술은 거의 직선으로 떨어진다.
+    const c1 = tech.net > tech.from[1] ? [f[0] * 0.35, n[1]] : [f[0] * 0.5, (f[1] + n[1]) / 2];
+    const c2 = [t[0] * 0.3, n[1]];
+    const w1 = Math.abs(n[0] - f[0]), w2 = Math.abs(t[0] - n[0]);
+    return { f, n, t, c1, c2, split: w1 / (w1 + w2 || 1) };
   }
   function bez(f, c, t, u) {
     const v = 1 - u;
     return [v * v * f[0] + 2 * v * u * c[0] + u * u * t[0], v * v * f[1] + 2 * v * u * c[1] + u * u * t[1]];
+  }
+  // 전체 진행도 u(0~1)를 두 구간에 가로 거리 비율로 나눠 셔틀 위치를 구한다.
+  function techAt(cv, u) {
+    return u <= cv.split
+      ? bez(cv.f, cv.c1, cv.n, cv.split ? u / cv.split : 1)
+      : bez(cv.n, cv.c2, cv.t, (u - cv.split) / (1 - cv.split || 1));
   }
   function drawTech(tech) {
     const svg = $("#techSvg");
@@ -3699,7 +3743,7 @@ DATA.topics.push(buildSinglesSmashDefence());
     techAnim += 1;
     const myAnim = techAnim;
     const g = el("g", {}, svg);
-    let f, c, t, shuttleR, sideW = 0.09;
+    let f, c, t, cv = null, shuttleR, sideW = 0.09;
     if (techMode === "side") {
       // 옆에서 본 단면: 가로는 코트 길이(±6.7m), 세로는 높이. SVG는 y가 아래로 커지므로 높이 h를 -h로 놓는다.
       // 높이 범위는 기술에 맞춰 조인다(네트샷·킬처럼 낮은 기술이 화면 구석에 작게 찍히지 않게). 스케일이
@@ -3708,7 +3752,7 @@ DATA.topics.push(buildSinglesSmashDefence());
       // 스케일이 기술마다 달라지므로 1m 눈금을 같이 그려 실제 높이를 읽을 수 있게 한다.
       // SVG 박스 종횡비(약 1.7:1)에 viewBox를 맞춰야 위아래 빈 공간 없이 꽉 찬다.
       const RATIO = 1.7;
-      const hNeed = Math.max(tech.apex, tech.from[1], NET_H) + 0.5;
+      const hNeed = Math.max(tech.net, tech.from[1], tech.to[1], NET_H) + 0.5;
       const xLo = Math.min(tech.from[0], tech.to[0]) - 1.1, xHi = Math.max(tech.from[0], tech.to[0]) + 1.1;
       const W = Math.max(xHi - xLo, hNeed * RATIO), H = W / RATIO;
       const cx = (xLo + xHi) / 2, vx = cx - W / 2, floorGap = H * 0.11;
@@ -3727,9 +3771,8 @@ DATA.topics.push(buildSinglesSmashDefence());
       el("line", { x1: -fs * 0.9, y1: -NET_H, x2: fs * 0.9, y2: -NET_H, stroke: "#24354c", "stroke-width": fs * 0.7 }, g);
       const nl = el("text", { x: -fs * 1.3, y: -NET_H * 0.45, "text-anchor": "end", "font-size": fs * 1.15, fill: "#5a6b78" }, g);
       nl.textContent = "네트 1.52m";
-      f = [tech.from[0], -tech.from[1]];
-      t = [tech.to[0], -tech.to[1]];
-      c = techCtrl(f, t, -tech.apex, tech.at);
+      cv = techCurve(tech);
+      f = cv.f; t = cv.t;
       shuttleR = fs * 0.95;
       sideW = fs * 0.55;
     } else {
@@ -3750,35 +3793,56 @@ DATA.topics.push(buildSinglesSmashDefence());
       f = [tech.top[0], tech.top[1]];
       t = [tech.top[2], tech.top[3]];
       c = [(f[0] + t[0]) / 2, (f[1] + t[1]) / 2]; // 위에서 보면 코스는 거의 직선
+      cv = null;
       shuttleR = 0.16;
     }
-    el("path", { d: "M " + f[0] + " " + f[1] + " Q " + c[0] + " " + c[1] + " " + t[0] + " " + t[1],
-      fill: "none", stroke: "#e2384d", "stroke-width": techMode === "side" ? sideW : 0.08, "stroke-dasharray": "0.3 0.2", opacity: "0.9" }, g);
+    const d = cv
+      ? "M " + cv.f[0] + " " + cv.f[1] + " Q " + cv.c1[0] + " " + cv.c1[1] + " " + cv.n[0] + " " + cv.n[1] + " Q " + cv.c2[0] + " " + cv.c2[1] + " " + cv.t[0] + " " + cv.t[1]
+      : "M " + f[0] + " " + f[1] + " Q " + c[0] + " " + c[1] + " " + t[0] + " " + t[1];
+    el("path", { d: d, fill: "none", stroke: "#e2384d", "stroke-width": techMode === "side" ? sideW : 0.08, "stroke-dasharray": "0.3 0.2", opacity: "0.9" }, g);
     el("circle", { cx: f[0], cy: f[1], r: shuttleR * 0.8, fill: "#ffd23f", stroke: "#24354c", "stroke-width": "0.05" }, g);
     const sh = el("circle", { cx: f[0], cy: f[1], r: shuttleR, fill: "#fff", stroke: "#222", "stroke-width": "0.05" }, g);
     tween(tech.ms, (u) => {
       if (myAnim !== techAnim) return;
-      const p = bez(f, c, t, u);
+      const p = cv ? techAt(cv, u) : bez(f, c, t, u);
       sh.setAttribute("cx", p[0]);
       sh.setAttribute("cy", p[1]);
     });
   }
-  function renderTechBody(tech) {
+  function renderTechBody(base, tech) {
     const body = $("#techBody");
     body.innerHTML = "";
-    const h = document.createElement("div"); h.className = "tech-name"; h.textContent = tech.name;
+    const h = document.createElement("div"); h.className = "tech-name";
+    h.textContent = tech.name + (techVar >= 0 ? " — " + base.name + "의 변형" : "");
     body.appendChild(h);
+    if (techVar >= 0) {
+      const p = document.createElement("p"); p.className = "tech-line";
+      const b = document.createElement("b"); b.textContent = "무엇이 다른가 — ";
+      p.appendChild(b); p.appendChild(document.createTextNode(tech.note));
+      body.appendChild(p);
+    }
     [["언제", tech.when], ["노리는 것", tech.aim], ["위험", tech.risk]].forEach(([k, v]) => {
       const p = document.createElement("p"); p.className = "tech-line";
       const b = document.createElement("b"); b.textContent = k + " — ";
       p.appendChild(b); p.appendChild(document.createTextNode(v));
       body.appendChild(p);
     });
-    if (tech.vars.length) {
-      const v = document.createElement("p"); v.className = "tech-var";
-      v.textContent = "게임에 나오는 변형: " + tech.vars.join(" · ");
-      body.appendChild(v);
-    }
+  }
+  function renderTechVars(base) {
+    const wrap = $("#techVars");
+    wrap.innerHTML = "";
+    if (!base.vars.length) return;
+    const lbl = document.createElement("span"); lbl.className = "tech-varlbl"; lbl.textContent = "변형";
+    wrap.appendChild(lbl);
+    const mk = (name, idx) => {
+      const b = document.createElement("button");
+      b.className = "tech-chip tech-vchip" + (techVar === idx ? " on" : "");
+      b.type = "button"; b.textContent = name;
+      b.addEventListener("click", () => { techVar = idx; renderTechs(); });
+      wrap.appendChild(b);
+    };
+    mk("기본", -1);
+    base.vars.forEach((v, i) => mk(v.name, i));
   }
   function renderTechChips() {
     const wrap = $("#techChips");
@@ -3788,7 +3852,7 @@ DATA.topics.push(buildSinglesSmashDefence());
       b.className = "tech-chip" + (t.id === techId ? " on" : "");
       b.type = "button";
       b.textContent = t.name;
-      b.addEventListener("click", () => { techId = t.id; renderTechs(); });
+      b.addEventListener("click", () => { techId = t.id; techVar = -1; renderTechs(); });
       wrap.appendChild(b);
     });
   }
@@ -3801,6 +3865,7 @@ DATA.topics.push(buildSinglesSmashDefence());
         b.addEventListener("click", () => {
           techGroup = gname;
           techId = TECHS.find((t) => t.g === gname).id;
+          techVar = -1;
           renderTechs();
         });
         tabs.appendChild(b);
@@ -3808,11 +3873,13 @@ DATA.topics.push(buildSinglesSmashDefence());
     }
     document.querySelectorAll(".tech-tab").forEach((b) => b.classList.toggle("on", b.dataset.g === techGroup));
     renderTechChips();
-    const tech = TECHS.find((t) => t.id === techId);
+    const base = TECHS.find((t) => t.id === techId);
+    renderTechVars(base);
+    const tech = techOf(base, techVar);
     $("#techSide").classList.toggle("on", techMode === "side");
     $("#techTop").classList.toggle("on", techMode === "top");
     drawTech(tech);
-    renderTechBody(tech);
+    renderTechBody(base, tech);
   }
 
   function drawRuleCourt(mode) {
@@ -4028,7 +4095,7 @@ DATA.topics.push(buildSinglesSmashDefence());
   $("#btnTechsBack").addEventListener("click", () => { $("#techs").classList.add("hidden"); $("#mainMenu").classList.remove("hidden"); });
   $("#techSide").addEventListener("click", () => { techMode = "side"; renderTechs(); });
   $("#techTop").addEventListener("click", () => { techMode = "top"; renderTechs(); });
-  $("#techReplay").addEventListener("click", () => { drawTech(TECHS.find((t) => t.id === techId)); });
+  $("#techReplay").addEventListener("click", () => { drawTech(techOf(TECHS.find((t) => t.id === techId), techVar)); });
   $("#btnRulesBack").addEventListener("click", () => { $("#rules").classList.add("hidden"); $("#mainMenu").classList.remove("hidden"); });
   $("#btnScheduleBack").addEventListener("click", () => { $("#schedule").classList.add("hidden"); $("#mainMenu").classList.remove("hidden"); });
   $("#btnStartBack").addEventListener("click", () => { $("#start").classList.add("hidden"); $("#mainMenu").classList.remove("hidden"); });
