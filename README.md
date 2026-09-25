@@ -50,6 +50,7 @@ node scripts/check-data.mjs mobile/index.html         # 갈래 연결 · 출처 
 node scripts/check-recommended.mjs mobile/index.html  # 추천 코스 자동 재생 경로 검사
 node scripts/check-course-dir.mjs                      # 코스(좌/우 스트레이트·크로스) 방향 일관성 검사
 node scripts/note-stats.mjs mobile/index.html          # 상황 설명 문구 길이 · 형식 검사
+node scripts/check-tech-curve.mjs mobile/index.html    # 기술 배우기 화면 궤적 검사(네트 통과 높이 · 모양)
 ```
 
 ## 기술 스택
