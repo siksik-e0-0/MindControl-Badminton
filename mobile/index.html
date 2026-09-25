@@ -78,12 +78,17 @@
   .tech-tabs { display: flex; gap: 6px; overflow-x: auto; margin: 2px 0 8px; padding-bottom: 2px; }
   .tech-tab { flex: 0 0 auto; min-height: 32px; padding: 0 12px; border: 1.5px solid #bbb; background: #fff; border-radius: 16px; font-size: 13px; color: var(--ink); white-space: nowrap; }
   .tech-tab.on { background: var(--navy); color: #fff; border-color: var(--navy); }
-  .tech-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
-  .tech-chip { min-height: 32px; padding: 0 10px; border: 1.5px solid #ccc; background: #fff; border-radius: 8px; font-size: 13px; color: var(--ink); }
+  /* 두 칩 줄이 내용에 따라 한 줄/두 줄로 접히면서 아래 그림 영역을 밀어 올리고 내렸다.
+     그룹 탭 줄과 같이 한 줄 + 가로 스크롤로 두고, 변형이 없는 기술에서도 줄이 자리를
+     지키도록 min-height를 준다 — 어떤 버튼을 눌러도 그림이 같은 자리에 온다. */
+  .tech-chips { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 6px; margin-bottom: 10px; padding-bottom: 2px; }
+  #techChips { min-height: 32px; }
+  #techVars { min-height: 30px; }
+  .tech-chip { flex: 0 0 auto; min-height: 32px; padding: 0 10px; border: 1.5px solid #ccc; background: #fff; border-radius: 8px; font-size: 13px; color: var(--ink); }
   .tech-chip.on { background: var(--orange); color: #fff; border-color: var(--orange); font-weight: 700; }
   .tech-vchip { min-height: 28px; font-size: 12px; border-style: dashed; }
   .tech-vchip.on { background: var(--navy); color: #fff; border-color: var(--navy); border-style: solid; }
-  .tech-varlbl { align-self: center; font-size: 11px; color: var(--muted); margin-right: 2px; }
+  .tech-varlbl { flex: 0 0 auto; align-self: center; font-size: 11px; color: var(--muted); margin-right: 2px; }
   .tech-view { background: rgba(255,255,255,.55); border-radius: 10px; padding: 6px 4px 4px; display: flex; align-items: flex-start; gap: 8px; }
   .tech-pane { flex: 7 1 0; min-width: 0; } /* 옆에서 본 그림 — 가로 폭이 곧 축척이라 넓게 준다 */
   .tech-pane.top { flex: 3 1 0; border-left: 1px dashed rgba(36,53,76,.18); padding-left: 6px; }
@@ -334,7 +339,7 @@ const SOURCES = {
 // 각 노드: shot(누가 어디서 어디로), pos(샷 뒤 네 명 위치), formation, arrow(로테이션 신호), notes(설명+출처)
 // ============================================================================
 const DATA = {
-  version: "v2.39",
+  version: "v2.40",
   topics: [
     {
       id: "serve-side", sport: "level",
