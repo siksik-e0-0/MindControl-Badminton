@@ -87,8 +87,8 @@
   .tech-view { background: rgba(255,255,255,.55); border-radius: 10px; padding: 6px 4px 4px; }
   .tech-pane + .tech-pane { margin-top: 6px; border-top: 1px dashed rgba(36,53,76,.18); padding-top: 4px; }
   .tech-cap { display: block; font-size: 11px; color: var(--muted); margin: 0 0 1px 4px; }
-  .tech-svg { width: 100%; height: 150px; display: block; }
-  .tech-svg.top { height: 180px; }
+  .tech-svg { width: 100%; height: 190px; display: block; }
+  .tech-svg.top { height: 170px; }
   .tech-viewbar { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin: 6px 0 2px; }
   .tech-vbtn { min-height: 30px; padding: 0 10px; border: 1.5px solid var(--navy); background: transparent; color: var(--navy); border-radius: 8px; font-size: 12px; }
   .tech-vbtn.on { background: var(--navy); color: #fff; }
@@ -335,7 +335,7 @@ const SOURCES = {
 // 각 노드: shot(누가 어디서 어디로), pos(샷 뒤 네 명 위치), formation, arrow(로테이션 신호), notes(설명+출처)
 // ============================================================================
 const DATA = {
-  version: "v2.36",
+  version: "v2.37",
   topics: [
     {
       id: "serve-side", sport: "level",
@@ -3763,7 +3763,24 @@ DATA.topics.push(buildSinglesSmashDefence());
   }
   // 옆에서 본 단면: 가로는 코트 길이(±6.7m), 세로는 높이. SVG는 y가 아래로 커지므로 높이 h를 -h로 놓는다.
   // 보이는 범위는 기술에 맞춰 조인다(네트샷·킬처럼 낮고 짧은 기술이 화면 구석에 작게 찍히지 않게).
-  // 스케일이 기술마다 달라지므로 1m 간격 가로선을 배경에 깔아 높이 감각만 준다(수치는 적지 않는다).
+  // 축척은 모든 기술이 같다(techViewBox) — 높이 기준은 항상 같은 크기로 그려지는 네트다.
+  // 모든 기술을 같은 축척으로 그리기 위한 공통 범위. 기술마다 viewBox를 조이면 네트 크기와
+  // 높이 스케일이 기술마다 달라져 화면이 튀고 기술끼리 비교가 안 된다. TECHS 전체에서 실제로
+  // 필요한 최대치를 한 번만 재서 모두가 같은 범위를 쓴다.
+  let techBox = null;
+  function techViewBox() {
+    if (techBox) return techBox;
+    let xLo = 0, xHi = 0, hi = NET_H;
+    TECHS.forEach((base) => {
+      base.vars.map((_, i) => techOf(base, i)).concat([base]).forEach((t) => {
+        xLo = Math.min(xLo, t.from[0], t.to[0]);
+        xHi = Math.max(xHi, t.from[0], t.to[0]);
+        hi = Math.max(hi, t.apex ? t.apex[1] : t.net, t.from[1], t.to[1]);
+      });
+    });
+    techBox = { xLo: xLo - 0.7, xHi: xHi + 0.7, hi: hi + 0.4 };
+    return techBox;
+  }
   function drawTechSide(tech) {
     const svg = $("#techSideSvg");
     svg.innerHTML = "";
@@ -3772,19 +3789,13 @@ DATA.topics.push(buildSinglesSmashDefence());
     // (화면에 붙기 전이라 크기를 못 읽으면 CSS 기본값 322x150 비율로 둔다.)
     const bx = svg.getBoundingClientRect();
     const RATIO = bx.width > 0 && bx.height > 0 ? bx.width / bx.height : 322 / 150;
-    const topH = tech.apex ? tech.apex[1] : tech.net; // 곡선의 최고점
-    const hNeed = Math.max(topH, tech.from[1], tech.to[1], NET_H) + 0.5;
-    // 바닥 아래 여백(floorGap = H의 11%)을 빼고도 hNeed가 들어가야 궤적 꼭대기가 잘리지 않는다.
-    const hBox = hNeed / 0.89;
-    const xLo = Math.min(tech.from[0], tech.to[0]) - 1.1, xHi = Math.max(tech.from[0], tech.to[0]) + 1.1;
-    const W = Math.max(xHi - xLo, hBox * RATIO), H = W / RATIO;
-    const cx = (xLo + xHi) / 2, vx = cx - W / 2, floorGap = H * 0.11;
-    const fs = W / 34; // 글자·선 두께 — 가로 폭에 비례시키면 어느 기술에서나 화면상 같은 크기로 보인다
+    // 범위는 기술과 무관하게 고정 — 어느 기술을 골라도 네트와 높이가 같은 크기로 보인다.
+    const box = techViewBox(), floorGap = 0.35;
+    const W = Math.max(box.xHi - box.xLo, (box.hi + floorGap) * RATIO), H = W / RATIO;
+    const cx = (box.xLo + box.xHi) / 2, vx = cx - W / 2;
+    const fs = W / 34; // 선 두께 — 고정 범위라 이제 어느 기술에서나 같은 값이다
     svg.setAttribute("viewBox", vx + " " + (-(H - floorGap)) + " " + W + " " + H);
     el("rect", { x: vx, y: -(H - floorGap), width: W, height: H, fill: "#eaf2f7" }, g);
-    for (let h = 1; h < H - floorGap; h++) {
-      el("line", { x1: vx, y1: -h, x2: vx + W, y2: -h, stroke: "#c3d4de", "stroke-width": fs * 0.35, "stroke-dasharray": (fs * 2.5) + " " + (fs * 2.5) }, g);
-    }
     el("rect", { x: Math.max(vx, -6.7), y: -0.05, width: Math.min(W, 13.4), height: 0.05, fill: "#3f8f5a" }, g); // 코트 바닥
     el("line", { x1: Math.max(vx, -6.7), y1: 0, x2: Math.min(vx + W, 6.7), y2: 0, stroke: "#2c6b42", "stroke-width": fs * 0.45 }, g);
     [-6.7, -4.72, -1.98, 1.98, 4.72, 6.7].forEach((x) => { if (x > vx && x < vx + W) el("line", { x1: x, y1: 0, x2: x, y2: fs * 1.1, stroke: "#8aa0ad", "stroke-width": fs * 0.35 }, g); });
