@@ -344,7 +344,7 @@ const SOURCES = {
 // 각 노드: shot(누가 어디서 어디로), pos(샷 뒤 네 명 위치), formation, arrow(로테이션 신호), notes(설명+출처)
 // ============================================================================
 const DATA = {
-  version: "v2.41",
+  version: "v2.42",
   topics: [
     {
       id: "serve-side", sport: "level",
@@ -3727,7 +3727,8 @@ DATA.topics.push(buildSinglesSmashDefence());
   // 백핸드를 따로 나눠 20개 표로 쓰지만 이 화면의 기술 목록에는 포/백 구분이 없어, 한 기술
   // 안에서 두 쪽이 갈리는 대목만 "(백핸드) (포핸드)"로 나눠 적었다.
   // grip/prep/back/fwd/fin은 교재 표를 옮긴 것, tips는 교재의 HINTS 항목. noSrc가 있는 것은
-  // 교재에 그 기술의 표가 없어 다른 기술의 스윙을 기준으로 적었다는 뜻이다.
+  // 교재에 그 기술의 표가 없어 다른 기술의 스윙을 기준으로 적었다는 뜻이다. scope는 교재가
+  // 그 기술을 어디까지 다루는지 — 한 절이 여러 기술을 덮어 표가 하나뿐일 때 적는다.
   const SWINGS = {
     lowserve: {
       grip: "엄지 그립(백핸드) · 기본 그립(포핸드)",
@@ -3771,6 +3772,7 @@ DATA.topics.push(buildSinglesSmashDefence());
              "초반에 몸과 라켓 머리를 공격적으로 쓰면 상대가 클리어나 스매시로 착각한다."]
     },
     oclear: {
+      scope: "교재는 공격 클리어와 수비 클리어를 한 절에서 함께 다루고 스윙 표는 하나만 둔다. 교재가 적는 둘의 차이는 도달 높이뿐이고, 그 높이를 어떻게 만드는지는 나와 있지 않다.",
       grip: "기본 그립",
       prep: "기본 그립으로 라켓을 머리 위 준비 자세에 둔다. 반대 팔을 들고 옆으로 선다.",
       back: "뒷발로 위·앞으로 밀어 나간다. 뒤쪽 엉덩이를 앞으로, 뒤 어깨와 팔꿈치를 위·앞으로. 위팔·아래팔을 바깥으로 돌리고, 반대 팔을 당겨 몸 회전을 조절한다.",
@@ -3988,6 +3990,7 @@ DATA.topics.push(buildSinglesSmashDefence());
     // 교재에 표가 있는 기술만 "교재 기준"이라고 적는다. 표가 없어 다른 기술의 스윙을 옮겨 온
     // 경우에는 그 사실을 대신 적는다 — 둘을 같이 쓰면 앞뒤가 안 맞는다.
     techLine(body, null, sw.noSrc || "BWF 코치 교재(레벨 1) 기준.", "tech-var");
+    if (sw.scope) techLine(body, null, sw.scope, "tech-var");
     techLine(body, "그립", sw.grip);
     techLine(body, "준비", sw.prep);
     techLine(body, "백스윙", sw.back);
