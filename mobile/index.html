@@ -99,6 +99,11 @@
   .tech-vbtn { min-height: 30px; padding: 0 10px; border: 1.5px solid var(--navy); background: transparent; color: var(--navy); border-radius: 8px; font-size: 12px; }
   .tech-vbtn.on { background: var(--navy); color: #fff; }
   .tech-name { font-size: 17px; font-weight: 700; color: var(--navy); margin: 10px 0 2px; }
+  /* 설명 영역 안의 [코스]/[스윙] 전환. 그림 아래에 있으므로 이 줄의 높이가 바뀌어도
+     v2.40에서 고정한 그림 자리에는 영향이 없다. */
+  .tech-sub { display: flex; gap: 6px; margin: 6px 0 2px; }
+  .tech-sbtn { flex: 0 0 auto; min-height: 30px; padding: 0 14px; border: 1.5px solid #bbb; background: #fff; border-radius: 15px; font-size: 13px; color: var(--ink); }
+  .tech-sbtn.on { background: var(--navy); color: #fff; border-color: var(--navy); font-weight: 700; }
   .tech-line { font-size: 13px; color: var(--ink); line-height: 1.5; margin: 4px 0; }
   .tech-line b { color: var(--navy); }
   .tech-var { font-size: 12px; color: var(--muted); margin-top: 6px; line-height: 1.5; }
@@ -339,7 +344,7 @@ const SOURCES = {
 // 각 노드: shot(누가 어디서 어디로), pos(샷 뒤 네 명 위치), formation, arrow(로테이션 신호), notes(설명+출처)
 // ============================================================================
 const DATA = {
-  version: "v2.40",
+  version: "v2.41",
   topics: [
     {
       id: "serve-side", sport: "level",
@@ -3646,79 +3651,189 @@ DATA.topics.push(buildSinglesSmashDefence());
   //      적으면 변형이 한쪽만 덮어써서 두 그림이 서로 다른 곳에 떨어진다(v2.35에서 고친 문제).
   // vars: 데이터(shot.type)에 쓰인 변형 이름 — 이 화면이 실제 게임에 나오는 기술을 빠짐없이 덮는지 대조용이기도 하다.
   const TECHS = [
-    { id: "shortserve", g: "서브", name: "숏서브", from: [-2.0, 1.0], apex: [0.51, 1.72], to: [1.6, 0.05], ms: 900,
+    { id: "shortserve", swing: "lowserve", g: "서브", name: "숏서브", from: [-2.0, 1.0], apex: [0.51, 1.72], to: [1.6, 0.05], ms: 900,
       top: [0.6, -1.0],
       when: "상대에게 공격 기회를 주지 않고 시작할 때", aim: "네트를 겨우 넘겨 상대가 올려치게 만든다", risk: "조금만 떠도 네트에서 바로 얻어맞는다",
       vars: [] },
-    { id: "longserve", g: "서브", name: "롱서브", from: [-2.0, 1.0], apex: [0.58, 6.8], to: [5.9, 0.05], ms: 1300,
+    { id: "longserve", swing: "highserve", g: "서브", name: "롱서브", from: [-2.0, 1.0], apex: [0.58, 6.8], to: [5.9, 0.05], ms: 1300,
       top: [0.6, -1.2],
       when: "단식에서 상대를 뒤로 밀어낼 때", aim: "끝선 가까이 깊게 떨어뜨려 공격을 늦춘다", risk: "짧으면 그대로 스매시를 준다",
       vars: [] },
-    { id: "flickserve", g: "서브", name: "플릭 서브", from: [-2.0, 1.0], apex: [0.46, 3.0], to: [4.9, 0.05], ms: 800,
+    { id: "flickserve", swing: "flickserve", g: "서브", name: "플릭 서브", from: [-2.0, 1.0], apex: [0.46, 3.0], to: [4.9, 0.05], ms: 800,
       top: [0.6, -1.2],
       when: "상대가 숏서브를 노리고 앞으로 바짝 붙을 때", aim: "머리 위로 빠르게 넘겨 뒤로 밀어낸다", risk: "읽히면 뒤에서 스매시로 돌아온다",
       vars: [] },
-    { id: "smash", g: "뒤 공격", name: "스매시", from: [-5.0, 3.0], net: 1.95, to: [2.6, 0.05], ms: 500,
+    { id: "smash", swing: "smash", g: "뒤 공격", name: "스매시", from: [-5.0, 3.0], net: 1.95, to: [2.6, 0.05], ms: 500,
       top: [-0.3, -1.6],
       when: "높은 타점에서 점수를 끝내려 할 때", aim: "가파르게 내리꽂아 받기 어렵게 만든다", risk: "빗나가면 내 자세가 무너져 역공을 받는다",
       vars: [{ name: "슬라이스", note: "라켓면을 비껴 깎아 친다. 속도는 줄지만 각이 더 서고, 같은 폼에서 나와 상대가 타이밍을 뺏긴다.", net: 1.85, to: [1.9, 0.05], ms: 680 }] },
-    { id: "fastdrop", g: "뒤 공격", name: "빠른 드롭", from: [-5.0, 2.8], net: 1.78, to: [1.5, 0.05], ms: 650,
+    { id: "fastdrop", swing: "odrop", g: "뒤 공격", name: "빠른 드롭", from: [-5.0, 2.8], net: 1.78, to: [1.5, 0.05], ms: 650,
       top: [-0.3, -1.3],
       when: "스매시가 부담스러울 때 앞을 흔들려고", aim: "네트를 넘자마자 떨어뜨려 상대를 앞으로 끌어낸다", risk: "높이 뜨면 상대가 밀고 들어온다",
       vars: [] },
-    { id: "drop", g: "뒤 공격", name: "드롭", from: [-5.0, 2.8], net: 1.7, to: [1.15, 0.05], ms: 900,
+    { id: "drop", swing: "odrop", g: "뒤 공격", name: "드롭", from: [-5.0, 2.8], net: 1.7, to: [1.15, 0.05], ms: 900,
       top: [-0.3, -1.2],
       when: "상대를 앞으로 끌어내 뒤를 비우려 할 때", aim: "네트 바로 앞에 살짝 떨군다", risk: "느려서 읽히면 네트 앞에서 잡힌다",
       vars: [{ name: "드롭(빠르게)", note: "같은 드롭을 더 세게 쳐 상대가 앞으로 붙을 시간을 줄인다. 그만큼 덜 짧게 떨어진다.", ms: 650, to: [1.45, 0.05] },
              { name: "드롭(소프트)", note: "더 부드럽게 쳐 네트에 바짝 붙인다. 느린 만큼 읽히면 앞에서 잡힌다.", ms: 1100, net: 1.64, to: [0.9, 0.05] }] },
-    { id: "attackclear", g: "뒤 공격", name: "공격 클리어", from: [-5.0, 2.8], apex: [0.54, 5.0], to: [6.2, 0.05], ms: 700,
+    { id: "attackclear", swing: "oclear", g: "뒤 공격", name: "공격 클리어", from: [-5.0, 2.8], apex: [0.54, 5.0], to: [6.2, 0.05], ms: 700,
       top: [-0.3, -1.2],
       when: "상대가 앞으로 쏠려 있을 때", aim: "낮고 빠르게 뒤로 넘겨 자세를 무너뜨린다", risk: "높이가 낮아 가로채이면 바로 역공",
       vars: [] },
-    { id: "clear", g: "뒤 공격", name: "클리어", from: [-5.0, 2.7], apex: [0.5, 7.0], to: [6.3, 0.05], ms: 1250,
+    { id: "clear", swing: "oclear", g: "뒤 공격", name: "클리어", from: [-5.0, 2.7], apex: [0.5, 7.0], to: [6.3, 0.05], ms: 1250,
       top: [-0.3, -1.0],
       when: "시간을 벌고 자세를 회복해야 할 때", aim: "높고 깊게 끝선까지 보낸다", risk: "짧으면 스매시를 얻어맞는다",
       vars: [] },
-    { id: "drive", g: "전환", name: "드라이브", from: [-3.2, 1.45], apex: [0.53, 1.72], to: [3.6, 1.15], ms: 550, noBase: true,
+    { id: "drive", swing: "drive", g: "전환", name: "드라이브", from: [-3.2, 1.45], apex: [0.53, 1.72], to: [3.6, 1.15], ms: 550, noBase: true,
       top: [1.5, 1.8],
       when: "중간 높이 공을 빠르게 주고받는 상황에서", aim: "네트를 스치듯 평행하게 밀어붙여 주도권을 잡는다", risk: "조금이라도 뜨면 바로 얻어맞는다",
-      vars: [{ name: "드라이브(뜸)", note: "실수로 떠버린 드라이브다. 상대에게 내리칠 기회를 그대로 준다.", apex: [0.53, 2.2], to: [3.4, 1.55] },
+      vars: [{ name: "드라이브(뜸)", swing: null, swingNone: "실수로 뜬 공이라 따로 익힐 스윙이 없다. 드라이브 스윙을 그대로 보면 된다.", note: "실수로 떠버린 드라이브다. 상대에게 내리칠 기회를 그대로 준다.", apex: [0.53, 2.2], to: [3.4, 1.55] },
              { name: "드라이브(높게)", note: "일부러 조금 높여 상대 뒤쪽까지 보낸다. 뜬 만큼 위험도 같이 커진다.", apex: [0.53, 2.05], to: [4.3, 1.3] },
              { name: "드라이브(카운터)", note: "상대 드라이브를 그대로 되받아친다. 라켓을 미리 들고 있어야 나오는 샷.", ms: 470 }] },
-    { id: "net", g: "네트 앞", name: "헤어핀", from: [-0.85, 1.15], apex: [0.5, 1.62], to: [0.95, 0.05], ms: 900, noBase: true,
+    { id: "net", swing: "netshot", g: "네트 앞", name: "헤어핀", from: [-0.85, 1.15], apex: [0.5, 1.62], to: [0.95, 0.05], ms: 900, noBase: true,
       top: [1.2, 1.3],
       when: "네트 앞 낮은 공을 받을 때", aim: "네트에 붙여 떨어뜨려 상대가 올리게 만든다", risk: "뜨면 네트킬로 바로 끝난다",
       vars: [{ name: "네트샷(크로스)", note: "같은 네트샷을 대각선으로 보낸다 — 높이는 같고 코스만 다르다(위에서 보기로 확인).", top: [1.2, -1.5] }] },
-    { id: "crossnet", g: "네트 앞", name: "크로스 네트샷", from: [-0.85, 1.15], apex: [0.5, 1.64], to: [0.95, 0.05], ms: 950,
+    { id: "crossnet", swing: "netshot", g: "네트 앞", name: "크로스 네트샷", from: [-0.85, 1.15], apex: [0.5, 1.64], to: [0.95, 0.05], ms: 950,
       top: [1.2, -1.5],
       when: "상대가 스트레이트 쪽을 지키고 있을 때", aim: "대각선으로 빼 상대를 멀리 뛰게 만든다", risk: "비거리가 길어 가로채이기 쉽다",
       vars: [] },
-    { id: "kill", g: "네트 앞", name: "킬", from: [-0.75, 1.95], net: 1.62, to: [1.9, 0.05], ms: 420,
+    { id: "kill", swing: "netkill", g: "네트 앞", name: "킬", from: [-0.75, 1.95], net: 1.62, to: [1.9, 0.05], ms: 420,
       top: [1.1, 1.4],
       when: "상대 네트샷이 네트 위로 떴을 때", aim: "네트 위에서 아래로 찍어 그대로 끝낸다", risk: "라켓이나 몸이 네트에 닿으면 반칙",
-      vars: [{ name: "킬/푸시", note: "각이 안 나올 때 찍는 대신 밀어 보낸다. 덜 가파르고 더 멀리 간다.", net: 1.6, to: [2.8, 0.05], ms: 520 },
-             { name: "킬/네트샷", note: "높이가 모자라면 찍지 않고 네트에 떨군다. 무리하게 찍으면 네트에 걸린다.", net: 1.58, to: [0.9, 0.05], ms: 820 }] },
-    { id: "push", g: "네트 앞", name: "푸시", from: [-0.85, 1.5], apex: [0.3, 1.62], to: [3.3, 0.05], ms: 620, noBase: true,
+      vars: [{ name: "킬/푸시", swing: "push", note: "각이 안 나올 때 찍는 대신 밀어 보낸다. 덜 가파르고 더 멀리 간다.", net: 1.6, to: [2.8, 0.05], ms: 520 },
+             { name: "킬/네트샷", swing: "netshot", note: "높이가 모자라면 찍지 않고 네트에 떨군다. 무리하게 찍으면 네트에 걸린다.", net: 1.58, to: [0.9, 0.05], ms: 820 }] },
+    { id: "push", swing: "push", g: "네트 앞", name: "푸시", from: [-0.85, 1.5], apex: [0.3, 1.62], to: [3.3, 0.05], ms: 620, noBase: true,
       top: [1.2, 2.2],
       when: "네트 앞에서 조금 뜬 공을 받을 때", aim: "전위 옆으로 밀어 넣어 후위가 올리게 만든다", risk: "속도가 어중간하면 전위에게 가로채인다",
       vars: [{ name: "푸시(크로스)", note: "대각선으로 밀어 상대를 멀리 뛰게 만든다. 비거리가 길어 가로채일 틈도 는다.", top: [1.2, -2.2] },
              { name: "푸시(몸)", note: "상대 몸쪽으로 밀어 라켓을 쓰기 어렵게 만든다. 포핸드·백핸드 판단을 늦춘다.", top: [1.2, 0.2] },
              { name: "푸시(뒤 코너)", note: "더 깊게 밀어 뒤 코너까지 보낸다. 전위 머리 위를 넘겨야 해 조금 더 높다.", apex: [0.3, 1.8], to: [4.4, 0.05], top: [1.2, 2.4] }] },
-    { id: "lift", g: "수비", name: "리프트", from: [-1.1, 0.55], apex: [0.61, 6.2], to: [6.0, 0.05], ms: 1250,
+    { id: "lift", swing: "netlift", g: "수비", name: "리프트", from: [-1.1, 0.55], apex: [0.61, 6.2], to: [6.0, 0.05], ms: 1250,
       top: [1.1, -1.2],
       when: "네트 앞에서 더 나은 선택이 없을 때", aim: "깊게 올려 시간을 벌고 수비 대형을 갖춘다", risk: "짧으면 스매시를 그대로 준다",
       vars: [] },
-    { id: "block", g: "수비", name: "블록", from: [-2.6, 0.85], apex: [0.81, 1.62], to: [0.85, 0.05], ms: 800,
+    { id: "block", swing: "block", g: "수비", name: "블록", from: [-2.6, 0.85], apex: [0.81, 1.62], to: [0.85, 0.05], ms: 800,
       top: [0.6, 0.8],
       when: "스매시를 받아낼 때", aim: "네트 앞에 짧게 떨궈 상대 공격을 끊는다", risk: "뜨면 네트 앞에서 잡힌다",
       vars: [] },
-    { id: "longblock", g: "수비", name: "롱 블록", from: [-2.6, 0.85], apex: [0.52, 1.9], to: [3.4, 0.05], ms: 900,
+    { id: "longblock", swing: "push", g: "수비", name: "롱 블록", from: [-2.6, 0.85], apex: [0.52, 1.9], to: [3.4, 0.05], ms: 900,
       top: [0.6, 1.6],
       when: "상대 전위가 네트에 바짝 붙어 있을 때", aim: "전위 머리 위로 넘겨 미드코트로 보낸다", risk: "짧으면 그대로 가로채인다",
       vars: [] }
   ];
+  // 스윙 설명 — BWF 코치 교재 레벨 1(© BWF, 2판 2017) Module 7의 스트로크 표(준비/백스윙/
+  // 포워드 스윙/마무리)와 §9 그립, §C 크로스코트 서술을 한국어로 옮긴 것. 교재는 포핸드와
+  // 백핸드를 따로 나눠 20개 표로 쓰지만 이 화면의 기술 목록에는 포/백 구분이 없어, 한 기술
+  // 안에서 두 쪽이 갈리는 대목만 "(백핸드) (포핸드)"로 나눠 적었다.
+  // grip/prep/back/fwd/fin은 교재 표를 옮긴 것, tips는 교재의 HINTS 항목. noSrc가 있는 것은
+  // 교재에 그 기술의 표가 없어 다른 기술의 스윙을 기준으로 적었다는 뜻이다.
+  const SWINGS = {
+    lowserve: {
+      grip: "엄지 그립(백핸드) · 기본 그립(포핸드)",
+      prep: "라켓 쥔 쪽 발을 앞으로, 코트 'T' 가까이 선다. 엄지 그립을 짧고 느슨하게 잡고, 라켓을 몸 앞에 두고 셔틀을 얹는다.",
+      back: "라켓을 짧게 뒤로 빼고 라켓면을 살짝 연다.",
+      fwd: "셔틀을 밀어 보낸다 — 손에 든 셔틀을 라켓으로 쳐 낸다.",
+      fin: "미는 동작을 그대로 이어 가고, 라켓을 올려 상대 리턴을 견제한다.",
+      tips: ["포핸드로 낮게 넣을 때는 옆으로 서서 무게를 뒷발에 두고, 셔틀을 옆·앞으로 떨어뜨려 손목을 젖힌 채 밀어 보낸다."]
+    },
+    highserve: {
+      grip: "기본 그립",
+      prep: "서비스 박스 안에서 옆으로 선다. 라켓과 셔틀을 높이 들고 무게는 뒷발에.",
+      back: "무게를 앞으로 옮기기 시작한다. 셔틀을 옆·앞으로 떨어뜨리고 라켓을 내린다. 손목을 젖히고 팔뚝을 바깥으로 돌린다.",
+      fwd: "무게를 앞발로 계속 옮긴다. 팔뚝을 안으로 돌리고 손목을 펴 라켓 머리를 가속한다. 셔틀 아래를 세게, 몸 앞·옆에서 친다.",
+      fin: "라켓이 관성으로 높고 길게 빠져나간다.",
+      tips: []
+    },
+    flickserve: {
+      grip: "엄지 그립(백핸드)",
+      prep: "숏서브와 같다 — 라켓 쥔 쪽 발을 앞으로 'T' 가까이, 짧고 느슨한 엄지 그립, 라켓을 몸 앞에 두고 셔틀을 얹는다.",
+      back: "손목을 젖히고 팔뚝을 살짝 돌린다. 라켓을 짧게 뒤로 빼고 라켓면을 연다.",
+      fwd: "라켓 머리를 앞으로 가속해 셔틀을 손에서 튕겨 낸다.",
+      fin: "라켓 관성이 팔 회전을 이어 간다.",
+      tips: ["준비 자세가 숏서브와 같다는 점이 이 서브의 핵심이다 — 교재는 낮게 넣을 것처럼 믿게 만들어 뒤로 밀어낸다고 적는다."]
+    },
+    smash: {
+      grip: "기본(V) 그립",
+      prep: "기본 그립으로 편한 준비 자세. 뒷발에 체중을 싣고 옆으로 선다.",
+      back: "점프하며 공중에서 회전을 시작한다. 팔꿈치를 위·앞으로 올리고 팔뚝을 바깥으로 돌린다(머리 빗는 동작). 팔과 라켓 사이에 각을 만든다.",
+      fwd: "공중에서 회전을 이어 가며 팔뚝을 안으로 돌려 라켓 머리를 힘껏 던진다. 위로 뻗어 치고, 임팩트는 치는 쪽 어깨보다 앞에서.",
+      fin: "회전을 끝내고 착지한다. 힘을 빼면 팔뚝 회전이 더 이어진다. 라켓은 몸 앞에 둔다.",
+      tips: ["라켓면을 비껴 깎으면(슬라이스) 보낼 수 있는 범위와 속임이 늘어난다 — 오른쪽에서 왼쪽, 왼쪽에서 오른쪽 양쪽으로 해 본다."]
+    },
+    odrop: {
+      grip: "기본 그립",
+      prep: "기본 그립으로 라켓을 머리 위 준비 자세에 둔다. 반대 팔을 들고 옆으로 선다.",
+      back: "뒷발로 위·앞으로 밀어 나간다. 뒤쪽 엉덩이를 앞으로 보내고 뒤 어깨와 팔꿈치가 움직인다. 위팔·아래팔을 바깥으로 돌린다.",
+      fwd: "위팔·아래팔을 안으로 돌린다. 치는 어깨 위 또는 살짝 앞에서 셔틀을 잡고, 치기 직전 팔 회전을 멈춰 셔틀을 밀어 보낸다.",
+      fin: "뒷발이 내려와 앞발이 된다.",
+      tips: ["긴 드롭은 숏서비스라인 조금 너머, 짧은 드롭은 그 선과 네트 사이에 떨어진다.",
+             "초반에 몸과 라켓 머리를 공격적으로 쓰면 상대가 클리어나 스매시로 착각한다."]
+    },
+    oclear: {
+      grip: "기본 그립",
+      prep: "기본 그립으로 라켓을 머리 위 준비 자세에 둔다. 반대 팔을 들고 옆으로 선다.",
+      back: "뒷발로 위·앞으로 밀어 나간다. 뒤쪽 엉덩이를 앞으로, 뒤 어깨와 팔꿈치를 위·앞으로. 위팔·아래팔을 바깥으로 돌리고, 반대 팔을 당겨 몸 회전을 조절한다.",
+      fwd: "위팔·아래팔을 안으로 돌린다. 치는 어깨 위 또는 살짝 앞에서 힘껏 뻗어 친다. 임팩트 뒤 뒷발이 앞발을 지나간다.",
+      fin: "라켓 관성으로 팔이 안으로 돌아간다. 뒷발이 내려와 앞발이 된다.",
+      tips: ["백스윙과 포워드 스윙 사이에서 살짝 멈추면 상대 움직임이 흔들린다."]
+    },
+    drive: {
+      grip: "기본 그립 → 몸 앞에서 칠 때는 엄지(백핸드)·팬핸들(포핸드)",
+      prep: "기본 그립으로 라켓을 몸 앞에 든다.",
+      back: "몸 옆에서 치면 기본 그립을 그대로, 몸 앞에서 치면 백핸드는 엄지·포핸드는 팬핸들로 바꾼다. 팔꿈치를 들되 굽히고, 위팔·아래팔을 백핸드는 안으로·포핸드는 바깥으로 돌린다.",
+      fwd: "팔꿈치를 편다. 백핸드는 아래팔을 바깥으로 돌려 셔틀을 세게 관통해 치고, 포핸드는 위팔·아래팔을 안으로 돌려 팬핸들이면 몸 앞에서·기본 그립이면 몸 옆에서 친다.",
+      fin: "반동을 이용해 라켓을 빨리 되돌려 다음 샷을 준비한다. 포핸드는 임팩트 뒤에도 팔뚝 회전이 이어진다.",
+      tips: ["되받아치는 드라이브는 준비 단계의 '라켓을 몸 앞에 든다'가 그대로 핵심이다."]
+    },
+    netshot: {
+      grip: "엄지 그립(백핸드) · 기본 그립(포핸드)",
+      prep: "기본 그립으로 라켓을 몸 앞에 든다.",
+      back: "백핸드는 느슨한 엄지 그립으로 바꾼다. 편하게 뻗고 팔을 돌려 스트링 면을 셔틀 쪽으로 향한다.",
+      fwd: "온몸의 움직임을 쓴다. 셔틀을 밀어 보낸다.",
+      fin: "라켓을 올려 상대의 다음 샷에 대비한다.",
+      tips: ["네트에 가까우면 셔틀 아래를 살짝 휘는 궤적으로 스쳐 치면 회전이 걸려 상대가 받기 어렵다. 라켓을 오른쪽에서 왼쪽으로 셔틀 아래를 지나가게 하면 회전이 더 잘 걸린다.",
+             "대각선으로 보내는 방법 네 가지 — 몸 앞에서 잡기, 그립을 바꿔 면 각도 바꾸기, 손목을 굽혀 면 각도 바꾸기, 셔틀을 깎기."]
+    },
+    netkill: {
+      grip: "기본 그립 → 엄지(백핸드) · 팬핸들(포핸드)",
+      prep: "기본 그립으로 라켓을 몸 앞에 든다.",
+      back: "백핸드는 엄지 그립을 잡고 팔꿈치를 들어 굽힌 뒤 아래팔을 안으로 돌린다. 포핸드는 팬핸들로 바꾸고 팔꿈치를 굽혀 위팔·아래팔을 바깥으로 돌린다.",
+      fwd: "백핸드는 팔을 펴며 아래팔을 바깥으로 돌린다. 포핸드는 팔꿈치를 펴 앞으로 뻗고 위팔·아래팔을 안으로 돌려 아래로 힘껏 친다.",
+      fin: "힘이 빠지면서 라켓 관성으로 팔이 더 돌아간다. 라켓을 빨리 되돌려 리턴에 대비한다.",
+      tips: ["네트에 가까울수록 동작은 아주 짧다.",
+             "셔틀이 네트에 바짝 붙으면 라켓이 네트에 닿지 않게 셔틀을 가로질러 치기도 한다."]
+    },
+    push: {
+      noSrc: "BWF 코치 교재에 이 기술의 스윙 표는 없다. 아래는 블록 스윙을 기준으로 적은 것이다.",
+      grip: "기본 그립 → 엄지 그립",
+      prep: "기본 그립으로 라켓을 몸 앞에 든다.",
+      back: "느슨한 엄지 그립으로 바꾼다. 팔꿈치를 앞으로 냈다가 굽히고 라켓면을 연다.",
+      fwd: "팔꿈치를 편다. 면을 열어 둔 채 셔틀을 밀어 보낸다.",
+      fin: "힘이 빠지며 라켓 관성으로 팔이 돌아간다. 기본 그립과 몸 앞 위치를 되찾는다.",
+      tips: ["badmintonbible은 '푸시는 블록과 거의 같고 속도만 더 붙는다'고 적는다.",
+             "대각선으로 보내는 방법은 네트샷과 같다 — 몸 앞에서 잡기, 그립·손목으로 면 각도 바꾸기, 깎기."]
+    },
+    netlift: {
+      grip: "기본 그립 → 엄지 그립(백핸드)",
+      prep: "기본 그립으로 라켓을 몸 앞에 든다.",
+      back: "백핸드는 엄지 그립으로 바꿔 편하게 뻗고 팔을 안으로 돌리며 팔꿈치를 살짝 굽힌다. 포핸드는 편하게 뻗고 팔을 바깥으로 돌리며 손목을 젖힌다.",
+      fwd: "백핸드는 뻗으면서 팔을 바깥으로 돌려 셔틀을 관통해 친다. 포핸드는 손목을 펴 셔틀을 관통해 친다.",
+      fin: "라켓 관성으로 팔이 백핸드는 바깥으로, 포핸드는 안으로 돌아간다.",
+      tips: []
+    },
+    block: {
+      grip: "기본 그립 → 엄지 그립",
+      prep: "기본 그립으로 라켓을 몸 앞에 든다.",
+      back: "느슨한 엄지 그립으로 바꾼다. 팔꿈치를 앞으로 냈다가 굽히고, 위팔·아래팔 회전과 손목 젖힘으로 라켓면을 연다.",
+      fwd: "팔꿈치를 편다. 면을 연 채로 셔틀 약간 아래를 치며 밀어 보낸다.",
+      fin: "힘이 빠지며 라켓 관성으로 팔이 바깥으로 돌아간다. 기본 그립과 몸 앞 위치를 되찾는다.",
+      tips: []
+    }
+  };
   const NET_H = 1.524; // BWF 규정 — 네트 중앙 높이
   let techId = TECHS[0].id, techGroup = TECHS[0].g, techVar = -1, techAnim = 0;
+  let techPane = "course"; // 설명 영역 탭 — 기술을 바꿔도 유지한다(스윙끼리 비교하기 쉽게)
 
   // 변형은 base에서 필요한 값만 덮어쓴다(이름·설명은 변형 것, 나머지는 base 값).
   function techOf(base, vi) {
@@ -3856,24 +3971,47 @@ DATA.topics.push(buildSinglesSmashDefence());
       top.sh.setAttribute("cy", -p[0]);
     });
   }
+  // 설명 줄 하나. 앞에 굵은 이름을 붙일 때만 label을 준다.
+  function techLine(parent, label, text, cls) {
+    const p = document.createElement("p"); p.className = cls || "tech-line";
+    if (label) { const b = document.createElement("b"); b.textContent = label + " — "; p.appendChild(b); }
+    p.appendChild(document.createTextNode(text));
+    parent.appendChild(p);
+    return p;
+  }
+  function renderTechCourse(body, tech) {
+    [["언제", tech.when], ["노리는 것", tech.aim], ["위험", tech.risk]].forEach(([k, v]) => techLine(body, k, v));
+  }
+  function renderTechSwing(body, tech) {
+    const sw = tech.swing ? SWINGS[tech.swing] : null;
+    if (!sw) { techLine(body, null, tech.swingNone || "이 기술은 스윙 설명을 두지 않는다.", "tech-var"); return; }
+    // 교재에 표가 있는 기술만 "교재 기준"이라고 적는다. 표가 없어 다른 기술의 스윙을 옮겨 온
+    // 경우에는 그 사실을 대신 적는다 — 둘을 같이 쓰면 앞뒤가 안 맞는다.
+    techLine(body, null, sw.noSrc || "BWF 코치 교재(레벨 1) 기준.", "tech-var");
+    techLine(body, "그립", sw.grip);
+    techLine(body, "준비", sw.prep);
+    techLine(body, "백스윙", sw.back);
+    techLine(body, "스윙", sw.fwd);
+    techLine(body, "마무리", sw.fin);
+    (sw.tips || []).forEach((t) => techLine(body, null, t, "tech-var"));
+  }
   function renderTechBody(base, tech) {
     const body = $("#techBody");
     body.innerHTML = "";
     const h = document.createElement("div"); h.className = "tech-name";
     h.textContent = tech.name + (techVar >= 0 ? " — " + base.name + "의 변형" : "");
     body.appendChild(h);
-    if (techVar >= 0) {
-      const p = document.createElement("p"); p.className = "tech-line";
-      const b = document.createElement("b"); b.textContent = "무엇이 다른가 — ";
-      p.appendChild(b); p.appendChild(document.createTextNode(tech.note));
-      body.appendChild(p);
-    }
-    [["언제", tech.when], ["노리는 것", tech.aim], ["위험", tech.risk]].forEach(([k, v]) => {
-      const p = document.createElement("p"); p.className = "tech-line";
-      const b = document.createElement("b"); b.textContent = k + " — ";
-      p.appendChild(b); p.appendChild(document.createTextNode(v));
-      body.appendChild(p);
+    if (techVar >= 0) techLine(body, "무엇이 다른가", tech.note);
+    const sub = document.createElement("div"); sub.className = "tech-sub";
+    [["course", "코스"], ["swing", "스윙"]].forEach(([k, label]) => {
+      const b = document.createElement("button");
+      b.className = "tech-sbtn" + (techPane === k ? " on" : "");
+      b.type = "button"; b.textContent = label;
+      b.addEventListener("click", () => { techPane = k; renderTechBody(base, tech); });
+      sub.appendChild(b);
     });
+    body.appendChild(sub);
+    if (techPane === "swing") renderTechSwing(body, tech); else renderTechCourse(body, tech);
   }
   function renderTechVars(base) {
     const wrap = $("#techVars");
